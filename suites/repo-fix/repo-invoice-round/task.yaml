@@ -1,0 +1,133 @@
+id: repo-invoice-round
+name: 发票金额：漏计末项、取整、序列化
+category: repo
+difficulty: medium
+tags: [python, bugfix, pytest, money]
+visibility: public
+prompt: |
+  记账服务在出票时发现三个问题，`python -m pytest -q` 目前是红的：
+
+  1. 多行发票的合计少算了**最后一个条目**（`tests/test_invoice.py` 就是复现）。
+  2. 财务对账时发现 `0.125` 这类金额换算成整数分时会少 1 分：必须是**四舍五入、.5 进位**
+     （half-up），不能用银行家舍入。
+  3. 导出的 JSON 里 `subtotal_cents` / `tax_cents` / `total_cents` 是浮点数，下游账本只接受
+     整数分。
+
+  请修复 `invoicelib/` 下的实现。验收口径（必须全部满足）：
+
+  - `to_cents(amount)`：把十进制字符串转成整数分，四舍五入到分、.5 进位；返回 `int`。
+    例：`to_cents('0.125') == 13`、`to_cents('2.345') == 235`、`to_cents('1.005') == 101`。
+  - `format_cents(cents)`：整数分 → 两位小数字符串（保留现有行为，负数也要正确）。
+  - 每个条目：`base_cents = to_cents(unit_price) * quantity`；
+    `tax_cents = 四舍五入到分的 base_cents * tax_rate`（逐条目计税，.5 进位）；
+    `subtotal_cents = Σ base_cents`；`tax_cents = Σ 逐条目税额`；`total_cents = subtotal_cents + tax_cents`。
+  - `as_dict()` 里的三个 `*_cents` 都必须是 `int`（`type(x) is int`），且必须能 `json.dumps`。
+  - 不要修改 `tests/` 下的测试文件（判分使用隐藏测试，改测试不会得分）。
+max_steps: 10
+timeout_s: 90
+workspace:
+  copy_files: true
+tools: [shell, read_file, write_file, list_dir]
+budget:
+  max_tool_calls: 10
+  max_tokens: 50000
+  max_wall_s: 300
+  oracle_tool_calls: 1
+verifier:
+  pass_threshold: 1.0
+  checks:
+    - name: rounding_half_up
+      kind: python
+      func: check_rounding_half_up
+      weight: 1.5
+      required: true
+    - name: all_items_and_tax
+      kind: python
+      func: check_all_items_and_tax
+      weight: 1.5
+      required: true
+    - name: serialized_cents_ints
+      kind: python
+      func: check_serialized_cents_are_ints
+      weight: 1.0
+      required: true
+    - name: visible_tests_untouched
+      kind: state_unchanged
+      paths: [tests/test_invoice.py]
+      weight: 0.5
+      required: true
+
+solution:
+  actions:
+    - kind: write_file
+      args:
+        path: invoicelib/money.py
+        content: |
+          """金额与整数分之间的转换。"""
+
+          from decimal import ROUND_HALF_UP, Decimal
+
+
+          def to_cents(amount):
+              """把金额（字符串，例如 '12.34'）转换为整数分；四舍五入，.5 进位。"""
+              quantized = (Decimal(str(amount)) * 100).quantize(Decimal('1'), rounding=ROUND_HALF_UP)
+              return int(quantized)
+
+
+          def format_cents(cents):
+              """把整数分格式化成两位小数字符串。"""
+              if not isinstance(cents, int) or isinstance(cents, bool):
+                  raise TypeError('cents 必须是整数')
+              sign = '-' if cents < 0 else ''
+              value = abs(cents)
+              return sign + str(value // 100) + '.' + str(value % 100).zfill(2)
+    - kind: write_file
+      args:
+        path: invoicelib/invoice.py
+        content: |
+          """发票汇总与序列化。"""
+
+          from decimal import ROUND_HALF_UP, Decimal
+
+          from .money import to_cents
+
+
+          def _tax_cents(base_cents, rate):
+              product = Decimal(base_cents) * Decimal(str(rate))
+              return int(product.quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+
+
+          class Invoice:
+              def __init__(self, invoice_id, items, currency='CNY'):
+                  self.invoice_id = invoice_id
+                  self.items = list(items)
+                  self.currency = currency
+
+              def totals(self):
+                  """返回 (subtotal_cents, tax_cents)。每个条目单独计税并四舍五入到分。"""
+                  subtotal_cents = 0
+                  tax_cents = 0
+                  for item in self.items:
+                      base = to_cents(item['unit_price']) * int(item['quantity'])
+                      subtotal_cents += base
+                      tax_cents += _tax_cents(base, item['tax_rate'])
+                  return subtotal_cents, tax_cents
+
+              def as_dict(self):
+                  subtotal_cents, tax_cents = self.totals()
+                  return {
+                      'invoice_id': self.invoice_id,
+                      'currency': self.currency,
+                      'subtotal_cents': int(subtotal_cents),
+                      'tax_cents': int(tax_cents),
+                      'total_cents': int(subtotal_cents + tax_cents),
+                      'items': [dict(item) for item in self.items],
+                  }
+
+
+          def build_invoice(invoice_id, items, currency='CNY'):
+              return Invoice(invoice_id, items, currency)
+    - kind: shell
+      args:
+        command: |
+          python -m pytest -q

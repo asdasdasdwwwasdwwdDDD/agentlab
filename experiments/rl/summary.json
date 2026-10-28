@@ -1,0 +1,46 @@
+{
+  "by_policy": {
+    "fragile": {
+      "episodes": 4,
+      "success_rate": 0.5,
+      "mean_reward": 0.465,
+      "mean_steps": 3.5,
+      "mean_tool_calls": 1.0
+    },
+    "oracle": {
+      "episodes": 4,
+      "success_rate": 1.0,
+      "mean_reward": 0.96,
+      "mean_steps": 4.0,
+      "mean_tool_calls": 1.5
+    },
+    "retry": {
+      "episodes": 4,
+      "success_rate": 1.0,
+      "mean_reward": 0.9425,
+      "mean_steps": 5.75,
+      "mean_tool_calls": 2.5
+    },
+    "silent": {
+      "episodes": 4,
+      "success_rate": 0.75,
+      "mean_reward": 0.9025,
+      "mean_steps": 3.5,
+      "mean_tool_calls": 1.5
+    }
+  },
+  "meta": {
+    "suite": "rebound",
+    "reward_mode": "shaped",
+    "step_cost": 0.01,
+    "policies": [
+      "oracle",
+      "fragile",
+      "retry",
+      "silent"
+    ],
+    "episodes": 16,
+    "dataset": "experiments\\rl\\rollouts.jsonl",
+    "duration_s": 6.94
+  }
+}

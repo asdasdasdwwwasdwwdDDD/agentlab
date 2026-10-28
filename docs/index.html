@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgentLab · 可复现的 Agent / RL 环境评测栈</title>
+<style>
+  :root{ --ink:#e9eefb; --ink2:#93a3bb; --ink3:#5f708a; --line:rgba(140,170,215,.16); }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:#05070c;color:var(--ink);display:grid;place-items:center;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;
+    background:
+      radial-gradient(900px 560px at 12% -8%,rgba(56,189,248,.14),transparent 62%),
+      radial-gradient(840px 560px at 90% 108%,rgba(167,139,250,.14),transparent 62%);
+  }
+  body::after{
+    content:"";position:fixed;inset:0;pointer-events:none;
+    background-image:
+      linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);
+    background-size:54px 54px;
+    -webkit-mask-image:radial-gradient(ellipse at 50% 45%,#000 36%,transparent 84%);
+    mask-image:radial-gradient(ellipse at 50% 45%,#000 36%,transparent 84%);
+  }
+  main{position:relative;z-index:1;width:min(640px,88vw);padding:40px 0;text-align:center}
+  .brand{
+    display:inline-flex;align-items:center;gap:10px;margin-bottom:26px;
+    font-family:"JetBrains Mono",Consolas,ui-monospace,monospace;
+    font-size:11.5px;letter-spacing:.18em;color:#9fb4d0;
+  }
+  .brand i{
+    width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-style:normal;
+    background:linear-gradient(150deg,rgba(56,189,248,.22),rgba(167,139,250,.22));
+    border:1px solid rgba(140,190,255,.3);color:#cfe6ff;font-size:11px;
+  }
+  h1{font-size:30px;line-height:1.32;margin:0 0 14px;letter-spacing:-.01em;font-weight:700}
+  p.sub{margin:0 auto 30px;max-width:520px;font-size:14px;line-height:1.8;color:var(--ink2)}
+  .stats{
+    display:flex;justify-content:center;gap:26px;margin-bottom:34px;flex-wrap:wrap;
+    font-family:"JetBrains Mono",Consolas,monospace;font-size:11px;color:var(--ink3);letter-spacing:.06em;
+  }
+  .stats b{display:block;font-size:17px;color:#dbe7fb;font-weight:600;margin-bottom:4px;letter-spacing:0}
+  a.go{
+    display:inline-flex;align-items:center;gap:9px;padding:13px 26px;border-radius:11px;
+    background:linear-gradient(180deg,#8fe3ff,#4cc6e8);color:#04121a;text-decoration:none;
+    font-size:14px;font-weight:600;box-shadow:0 14px 36px -18px #38bdf8;transition:.18s;
+  }
+  a.go:hover{transform:translateY(-2px);box-shadow:0 18px 42px -18px #38bdf8}
+  .links{margin-top:26px;display:flex;justify-content:center;gap:18px;flex-wrap:wrap;font-size:12px}
+  .links a{color:#8fa3bd;text-decoration:none;border-bottom:1px solid rgba(140,170,215,.25);padding-bottom:2px}
+  .links a:hover{color:#e9eefb;border-color:#8fa3bd}
+  footer{
+    margin-top:40px;font-family:"JetBrains Mono",Consolas,monospace;
+    font-size:10.5px;color:#41506b;letter-spacing:.08em;line-height:1.9;
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="brand"><i>◈</i>AGENTLAB / RUNTIME FLOW</div>
+
+  <h1>一个能读懂、能改、能自证的<br>Agent 评测与 RL 环境</h1>
+  <p class="sub">
+    任务即数据，判分即代码，环境即状态机。从一条命令，到一个可复算的分数，
+    再到一份可训练的轨迹数据集 —— 全部走同一条链路。
+  </p>
+
+  <div class="stats">
+    <span><b>18</b>任务 / 4 环境域</span>
+    <span><b>12</b>种确定性检查项</span>
+    <span><b>9</b>类失败归因</span>
+    <span><b>3</b>种 reward 口径</span>
+  </div>
+
+  <a class="go" href="./agentlab-flow.html">打开可交互流程图 →</a>
+
+  <div class="links">
+    <a href="https://github.com/asdasdasdwwwasdwwdDDD/agentlab">源码仓库</a>
+    <a href="https://github.com/asdasdasdwwwasdwwdDDD/agentlab/blob/main/docs/DESIGN.md">架构设计</a>
+    <a href="https://github.com/asdasdasdwwwasdwwdDDD/agentlab/blob/main/docs/reproduction.md">复现说明</a>
+  </div>
+
+  <footer>
+    12 个模块 · 按真实执行顺序排列<br>
+    点击任意卡片看通俗解释与关键代码
+  </footer>
+</main>
+</body>
+</html>

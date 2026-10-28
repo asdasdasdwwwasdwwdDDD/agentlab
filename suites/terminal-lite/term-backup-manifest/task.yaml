@@ -1,0 +1,110 @@
+id: term-backup-manifest
+name: 备份目录与校验清单
+category: terminal
+difficulty: medium
+tags: [shell, backup, sha256, manifest]
+visibility: public
+prompt: |
+  发布前要做一次备份演练：把 `src/` 下的文件复制到 `backup/`，并生成清单。
+
+  1. 复制范围：`src/` 下所有文件，`backup/` 内保持与 `src/` 相同的相对路径。
+     满足任意一条即排除：
+     - 相对路径中任意一级**目录**名是 `tmp`、`vendor`、`__pycache__`；
+     - 扩展名（小写比较）是 `.log`、`.bak`、`.pyc`。
+  2. 必须是逐字节复制（内容完全一致）。
+  3. 生成 `backup/manifest.json`（UTF-8、2 空格缩进、以换行结尾），结构恰好为：
+
+         {
+           "file_count": <被复制的文件数>,
+           "total_bytes": <所有被复制文件的字节数之和>,
+           "files": [
+             {"path": "<相对 src/ 的路径，用 / 分隔>", "size": <字节数>, "sha256": "<小写十六进制摘要>"}
+           ]
+         }
+
+     `files` 按 `path` 字典序升序排列；`sha256` 是对被复制文件内容字节计算的摘要。
+  4. `manifest.json` 自身不列入 `files`。
+  5. `src/` 下任何文件都不得修改。
+
+  用可移植命令完成（例如 `python -c "..."`），不要联网。
+max_steps: 12
+timeout_s: 90
+workspace:
+  copy_files: true
+  files:
+    src/app/__pycache__/main.cpython-312.pyc: |
+      BYTECODE-PLACEHOLDER
+tools: [shell, read_file, write_file, list_dir]
+budget:
+  max_tool_calls: 12
+  max_tokens: 30000
+  max_wall_s: 240
+  oracle_tool_calls: 2
+verifier:
+  pass_threshold: 1.0
+  checks:
+    - name: manifest_exists
+      kind: file_exists
+      path: backup/manifest.json
+      weight: 0.5
+      required: false
+    - name: manifest_content
+      kind: python
+      func: check_manifest
+      weight: 2.0
+      required: true
+    - name: backup_copies
+      kind: python
+      func: check_copies
+      weight: 1.0
+      required: true
+    - name: source_untouched
+      kind: state_unchanged
+      paths: [src/app/main.py, src/docs/readme.md, src/license]
+      weight: 0.5
+      required: true
+solution:
+  actions:
+    - kind: list_dir
+      args:
+        path: src
+    - kind: shell
+      args:
+        command: |
+          python -c "import hashlib, json, shutil
+          from pathlib import Path
+          source = Path('src')
+          target = Path('backup')
+          if target.exists():
+              shutil.rmtree(target)
+          blocked_dirs = {'__pycache__', 'tmp', 'vendor'}
+          blocked_ext = {'.log', '.bak', '.pyc'}
+          files = []
+          for path in sorted(source.rglob('*')):
+              if not path.is_file():
+                  continue
+              rel = path.relative_to(source)
+              if blocked_dirs & set(rel.parts[:-1]) or path.suffix.lower() in blocked_ext:
+                  continue
+              destination = target / rel
+              destination.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copyfile(path, destination)
+              raw = destination.read_bytes()
+              files.append({'path': rel.as_posix(), 'size': len(raw), 'sha256': hashlib.sha256(raw).hexdigest()})
+          files.sort(key=lambda item: item['path'])
+          manifest = {'file_count': len(files), 'total_bytes': sum(item['size'] for item in files), 'files': files}
+          target.mkdir(parents=True, exist_ok=True)
+          (target / 'manifest.json').write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+          print('copied', len(files), 'files')"
+    - kind: shell
+      args:
+        command: |
+          python -c "import hashlib, json
+          from pathlib import Path
+          manifest = json.loads(Path('backup/manifest.json').read_text(encoding='utf-8'))
+          assert manifest['file_count'] == 5, manifest['file_count']
+          for item in manifest['files']:
+              data = (Path('backup') / item['path']).read_bytes()
+              assert hashlib.sha256(data).hexdigest() == item['sha256'], item['path']
+          print('verified', manifest['file_count'], 'backup files')"
+

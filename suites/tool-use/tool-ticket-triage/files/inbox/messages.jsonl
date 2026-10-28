@@ -1,0 +1,3 @@
+{"id": "m-01", "customer_id": "C-1001", "subject": "无法登录后台", "body": "urgent！整个团队都无法登录，影响发货。", "received_at": "2024-09-02T09:10:00"}
+{"id": "m-02", "customer_id": "C-1002", "subject": "月度报表导出很慢", "body": "导出要 10 分钟左右，但还能用，想了解一下优化计划。", "received_at": "2024-09-02T10:00:00"}
+{"id": "m-03", "customer_id": "C-1003", "subject": "账单金额有疑问", "body": "我们是企业版客户，urgent，请今天回复。", "received_at": "2024-09-02T11:30:00"}

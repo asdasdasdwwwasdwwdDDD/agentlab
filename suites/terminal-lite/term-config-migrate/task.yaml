@@ -1,0 +1,98 @@
+id: term-config-migrate
+name: INI 到 JSON 的配置迁移
+category: terminal
+difficulty: medium
+tags: [shell, config, migration, json]
+visibility: public
+prompt: |
+  老服务仍在用 INI 配置 `config/app.ini`，现在要迁到统一的 JSON 配置 `config/app.json`。
+  请严格按下面的规则生成新文件（不要添加别的字段）：
+
+  1. 段名转小写作为顶层键；段内键名转小写。`[deprecated]` 整段丢弃。
+  2. 值按顺序做类型转换（先去掉首尾空白）：
+     - 小写后是 `yes`/`on`/`true` → 布尔 `true`；是 `no`/`off`/`false` → 布尔 `false`；
+     - 能解析成十进制整数的 → 整数；
+     - 含逗号的 → 数组：按逗号切分、每项去空白、丢弃空项，保持原顺序；
+     - 其它保持字符串（大小写原样保留）。
+  3. 如果 `server` 下没有 `timeout_s`，补上默认值 `60`。
+  4. 写出 `config/app.json`：合法 JSON、UTF-8、2 空格缩进、键按字典序排序、以一个换行结尾。
+  5. `config/app.ini` 是线上在用的文件，不得修改。
+
+  用可移植命令完成（例如 `python -c "..."`），不要联网。
+max_steps: 10
+timeout_s: 60
+workspace:
+  copy_files: true
+tools: [shell, read_file, write_file, list_dir]
+budget:
+  max_tool_calls: 10
+  max_tokens: 30000
+  max_wall_s: 240
+  oracle_tool_calls: 2
+verifier:
+  pass_threshold: 1.0
+  checks:
+    - name: config_json_exists
+      kind: file_exists
+      path: config/app.json
+      weight: 0.5
+      required: false
+    - name: config_json_content
+      kind: python
+      func: check_migrated_config
+      weight: 3.0
+      required: true
+    - name: legacy_ini_untouched
+      kind: state_unchanged
+      paths: [config/app.ini]
+      weight: 1.0
+      required: true
+solution:
+  actions:
+    - kind: read_file
+      args:
+        path: config/app.ini
+    - kind: shell
+      args:
+        command: |
+          python -c "import configparser, json
+          from pathlib import Path
+          parser = configparser.ConfigParser(interpolation=None)
+          parser.read('config/app.ini', encoding='utf-8')
+          raw = {section: dict(parser.items(section)) for section in parser.sections()}
+          Path('work').mkdir(exist_ok=True)
+          Path('work/raw.json').write_text(json.dumps(raw, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          print('sections:', sorted(raw))"
+    - kind: shell
+      args:
+        command: |
+          python -c "import json
+          from pathlib import Path
+
+          def coerce(value):
+              raw = value.strip()
+              low = raw.lower()
+              if low in ('yes', 'on', 'true'):
+                  return True
+              if low in ('no', 'off', 'false'):
+                  return False
+              try:
+                  return int(low)
+              except ValueError:
+                  pass
+              if ',' in raw:
+                  return [part.strip() for part in raw.split(',') if part.strip() != '']
+              return raw
+
+          raw = json.loads(Path('work/raw.json').read_text(encoding='utf-8'))
+          data = {}
+          for section, values in raw.items():
+              name = section.strip().lower()
+              if name == 'deprecated':
+                  continue
+              data[name] = {key.lower(): coerce(value) for key, value in values.items()}
+          if 'timeout_s' not in data.get('server', {}):
+              data.setdefault('server', {})['timeout_s'] = 60
+          Path('config/app.json').write_text(json.dumps(data, indent=2, sort_keys=True, ensure_ascii=False) + '\n', encoding='utf-8')
+          print(json.dumps(data, sort_keys=True, ensure_ascii=False))"
+

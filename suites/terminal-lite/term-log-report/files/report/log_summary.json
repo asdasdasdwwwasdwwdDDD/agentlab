@@ -1,0 +1,11 @@
+{
+  "total": 23,
+  "by_level": {
+    "INFO": 12,
+    "WARN": 4,
+    "ERROR": 7
+  },
+  "error_rate": 0.3043,
+  "slowest_path": "/api/reports",
+  "slow_count": 8
+}

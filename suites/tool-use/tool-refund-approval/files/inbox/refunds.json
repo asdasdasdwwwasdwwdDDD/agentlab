@@ -1,0 +1,32 @@
+{
+  "requests": [
+    {
+      "request_id": "r-01",
+      "customer_id": "C-1001",
+      "order_id": "O-7001",
+      "claimed_days": 10,
+      "note": "尺码不合适"
+    },
+    {
+      "request_id": "r-02",
+      "customer_id": "C-1002",
+      "order_id": "O-7002",
+      "claimed_days": 3,
+      "note": "买错了"
+    },
+    {
+      "request_id": "r-03",
+      "customer_id": "C-1003",
+      "order_id": "O-7003",
+      "claimed_days": 8,
+      "note": "重复下单"
+    },
+    {
+      "request_id": "r-04",
+      "customer_id": "C-1004",
+      "order_id": "O-7004",
+      "claimed_days": 2,
+      "note": "不想要了"
+    }
+  ]
+}

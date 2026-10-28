@@ -1,0 +1,185 @@
+id: tool-ticket-triage
+name: 客服工单分诊：SLA 与客户档案
+category: tools
+difficulty: easy
+tags: [tools, triage, policy, mock]
+visibility: public
+prompt: |
+  你是客服值班同学。`inbox/messages.jsonl` 里有 3 条刚收到的客户消息（每行一个 JSON：
+  `id`/`customer_id`/`subject`/`body`/`received_at`）。
+
+  请完成分诊：
+
+  1. 用 `search_docs` 查内部文档里的 SLA 与优先级规范（英文关键词：`sla` 或 `policy`）。
+     文档里同时存在现行版和已废止版，**以现行版为准**。
+  2. 用 `lookup_customer` 逐个查询客户档案拿客户等级（一次查一个 `customer_id`）。
+     注意：客户在消息里自述的等级不一定准确，**以客户档案为准**。
+  3. 按现行规范为每条消息算出：`priority`（P1/P2/P3）、`queue`（incident/support/general）、
+     `sla_hours`（1/4/24）。
+  4. 把结果写到 `out/triage.json`，UTF-8，结构恰好为：
+
+         {"tickets": [
+            {"message_id": "m-01", "customer_id": "C-1001",
+             "priority": "P1", "queue": "incident", "sla_hours": 1}
+         ]}
+
+     按 `message_id` 升序排列，字段只允许上面 5 个。
+  5. 再对每条消息调用一次 `create_ticket`（args 里至少带 `message_id` 与 `customer_id`）。
+
+  约束：不要修改 `inbox/` 下的文件；不要凭空猜优先级，必须基于文档和客户档案。
+max_steps: 14
+timeout_s: 90
+workspace:
+  copy_files: true
+tools:
+  - name: shell
+  - name: read_file
+  - name: write_file
+  - name: list_dir
+  - name: search_docs
+    kind: mock_tool
+    description: "搜索内部文档。用英文关键词（sla / policy）查询。"
+    mock:
+      - match: "sla|priority|policy"
+        response: |
+          【SLA 与优先级规范 v2 · 现行（2024-07-01 起生效）】
+          客户等级：enterprise / business / free。
+          基础优先级：enterprise -> P1；business -> P2；free -> P3。
+          关键词升级：正文含 urgent / outage / 无法登录 任意一个时，优先级上调一级
+          （P3 -> P2，P2 -> P1，P1 封顶，不再上调）。
+          响应时限：P1 = 1 小时，P2 = 4 小时，P3 = 24 小时。
+          队列映射：P1 -> incident，P2 -> support，P3 -> general。
+
+          【SLA 与优先级规范 v1 · 已废止（2023-01-01 起，2024-06-30 停止使用）】
+          基础优先级：enterprise -> P2；business -> P3；free -> P3。无关键词升级规则。
+          响应时限：P2 = 8 小时，P3 = 72 小时。队列映射：P2 -> support，P3 -> general。
+      - default: "未找到文档。请用英文关键词重试（sla / policy）。"
+  - name: lookup_customer
+    kind: mock_tool
+    description: "按 customer_id 查询客户档案（等级 / 状态）。一次查一个 id。"
+    mock:
+      - match: "C-1001"
+        response: |
+          customer C-1001 | name: Acme Logistics | tier: business | status: active | region: cn-east
+      - match: "C-1002"
+        response: |
+          customer C-1002 | name: Bright Retail | tier: enterprise | status: active | region: cn-north
+      - match: "C-1003"
+        response: |
+          customer C-1003 | name: Cedar Studio | tier: free | status: active | region: cn-south
+      - default: "未找到该 customer_id。请传入形如 C-1001 的 id。"
+  - name: create_ticket
+    kind: mock_tool
+    description: "创建工单。args 里带上 message_id / customer_id / priority。"
+    effect: {ticket_created: true}
+    mock:
+      - match: ".*"
+        response: |
+          ticket created
+
+budget:
+  max_tool_calls: 10
+  max_tokens: 50000
+  max_wall_s: 300
+  oracle_tool_calls: 7
+verifier:
+  pass_threshold: 1.0
+  checks:
+    - name: triage_answer
+      kind: python
+      func: check_answer
+      weight: 3.0
+      required: true
+    - name: tool_usage_complete
+      kind: python
+      func: check_tool_usage_complete
+      weight: 1.5
+      required: true
+    - name: policy_looked_up
+      kind: tool_called
+      tool: search_docs
+      min_times: 1
+      args_contains: "sla|policy"
+      weight: 1.0
+      required: true
+    - name: tickets_created
+      kind: tool_called
+      tool: create_ticket
+      min_times: 3
+      weight: 1.0
+      required: true
+solution:
+  actions:
+    - kind: read_file
+      args:
+        path: inbox/messages.jsonl
+    - kind: tool
+      args:
+        name: search_docs
+        args:
+          query: "sla priority policy"
+    - kind: tool
+      args:
+        name: lookup_customer
+        args:
+          customer_id: "C-1001"
+    - kind: tool
+      args:
+        name: lookup_customer
+        args:
+          customer_id: "C-1002"
+    - kind: tool
+      args:
+        name: lookup_customer
+        args:
+          customer_id: "C-1003"
+    - kind: write_file
+      args:
+        path: out/triage.json
+        content: |
+          {
+            "tickets": [
+              {
+                "message_id": "m-01",
+                "customer_id": "C-1001",
+                "priority": "P1",
+                "queue": "incident",
+                "sla_hours": 1
+              },
+              {
+                "message_id": "m-02",
+                "customer_id": "C-1002",
+                "priority": "P1",
+                "queue": "incident",
+                "sla_hours": 1
+              },
+              {
+                "message_id": "m-03",
+                "customer_id": "C-1003",
+                "priority": "P2",
+                "queue": "support",
+                "sla_hours": 4
+              }
+            ]
+          }
+    - kind: tool
+      args:
+        name: create_ticket
+        args:
+          message_id: "m-01"
+          customer_id: "C-1001"
+          priority: "P1"
+    - kind: tool
+      args:
+        name: create_ticket
+        args:
+          message_id: "m-02"
+          customer_id: "C-1002"
+          priority: "P1"
+    - kind: tool
+      args:
+        name: create_ticket
+        args:
+          message_id: "m-03"
+          customer_id: "C-1003"
+          priority: "P2"

@@ -1,0 +1,657 @@
+{
+  "overall": {
+    "n": 36,
+    "successes": 36,
+    "success_rate": 1.0,
+    "wilson_ci": [
+      0.9036,
+      1.0
+    ],
+    "avg_tool_calls": 3.0,
+    "avg_steps": 5.67,
+    "p50_wall_ms": 678,
+    "avg_efficiency": 1.0,
+    "avg_cost_usd": 0.0,
+    "avg_tokens": 0.0
+  },
+  "by_suite": {
+    "rebound": {
+      "n": 8,
+      "successes": 8,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.6756,
+        1.0
+      ],
+      "avg_tool_calls": 1.5,
+      "avg_steps": 4.0,
+      "p50_wall_ms": 351,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "repo-fix": {
+      "n": 8,
+      "successes": 8,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.6756,
+        1.0
+      ],
+      "avg_tool_calls": 1.0,
+      "avg_steps": 4.25,
+      "p50_wall_ms": 2667,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "terminal-lite": {
+      "n": 12,
+      "successes": 12,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.7575,
+        1.0
+      ],
+      "avg_tool_calls": 2.0,
+      "avg_steps": 4.17,
+      "p50_wall_ms": 706,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "tool-use": {
+      "n": 8,
+      "successes": 8,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.6756,
+        1.0
+      ],
+      "avg_tool_calls": 8.0,
+      "avg_steps": 11.0,
+      "p50_wall_ms": 22,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    }
+  },
+  "by_difficulty": {
+    "medium": {
+      "n": 16,
+      "successes": 16,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.8064,
+        1.0
+      ],
+      "avg_tool_calls": 2.5,
+      "avg_steps": 5.12,
+      "p50_wall_ms": 711,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "easy": {
+      "n": 8,
+      "successes": 8,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.6756,
+        1.0
+      ],
+      "avg_tool_calls": 3.25,
+      "avg_steps": 5.5,
+      "p50_wall_ms": 494,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "hard": {
+      "n": 12,
+      "successes": 12,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.7575,
+        1.0
+      ],
+      "avg_tool_calls": 3.5,
+      "avg_steps": 6.5,
+      "p50_wall_ms": 720,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    }
+  },
+  "by_agent": {
+    "scripted/mock": {
+      "n": 36,
+      "successes": 36,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.9036,
+        1.0
+      ],
+      "avg_tool_calls": 3.0,
+      "avg_steps": 5.67,
+      "p50_wall_ms": 678,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    }
+  },
+  "by_task": {
+    "rb-ambiguity-port": {
+      "n": 2,
+      "successes": 2,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.3424,
+        1.0
+      ],
+      "avg_tool_calls": 0.0,
+      "avg_steps": 5.0,
+      "p50_wall_ms": 27,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "rb-budget-oneshot": {
+      "n": 2,
+      "successes": 2,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.3424,
+        1.0
+      ],
+      "avg_tool_calls": 1.0,
+      "avg_steps": 2.0,
+      "p50_wall_ms": 359,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "rb-drift-config": {
+      "n": 2,
+      "successes": 2,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.3424,
+        1.0
+      ],
+      "avg_tool_calls": 3.0,
+      "avg_steps": 5.0,
+      "p50_wall_ms": 1010,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "rb-fault-retry": {
+      "n": 2,
+      "successes": 2,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.3424,
+        1.0
+      ],
+      "avg_tool_calls": 2.0,
+      "avg_steps": 4.0,
+      "p50_wall_ms": 343,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "repo-csv-ledger": {
+      "n": 2,
+      "successes": 2,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.3424,
+        1.0
+      ],
+      "avg_tool_calls": 1.0,
+      "avg_steps": 4.0,
+      "p50_wall_ms": 2708,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "repo-invoice-round": {
+      "n": 2,
+      "successes": 2,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.3424,
+        1.0
+      ],
+      "avg_tool_calls": 1.0,
+      "avg_steps": 4.0,
+      "p50_wall_ms": 2442,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "repo-log-rotate": {
+      "n": 2,
+      "successes": 2,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.3424,
+        1.0
+      ],
+      "avg_tool_calls": 1.0,
+      "avg_steps": 4.0,
+      "p50_wall_ms": 2636,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "repo-retry-engine": {
+      "n": 2,
+      "successes": 2,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.3424,
+        1.0
+      ],
+      "avg_tool_calls": 1.0,
+      "avg_steps": 5.0,
+      "p50_wall_ms": 2708,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "term-backup-manifest": {
+      "n": 2,
+      "successes": 2,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.3424,
+        1.0
+      ],
+      "avg_tool_calls": 2.0,
+      "avg_steps": 4.0,
+      "p50_wall_ms": 762,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "term-config-migrate": {
+      "n": 2,
+      "successes": 2,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.3424,
+        1.0
+      ],
+      "avg_tool_calls": 2.0,
+      "avg_steps": 4.0,
+      "p50_wall_ms": 660,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "term-csv-clean": {
+      "n": 2,
+      "successes": 2,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.3424,
+        1.0
+      ],
+      "avg_tool_calls": 2.0,
+      "avg_steps": 4.0,
+      "p50_wall_ms": 646,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "term-dup-audit": {
+      "n": 2,
+      "successes": 2,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.3424,
+        1.0
+      ],
+      "avg_tool_calls": 2.0,
+      "avg_steps": 4.0,
+      "p50_wall_ms": 740,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "term-log-report": {
+      "n": 2,
+      "successes": 2,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.3424,
+        1.0
+      ],
+      "avg_tool_calls": 2.0,
+      "avg_steps": 4.0,
+      "p50_wall_ms": 696,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "term-port-conflict": {
+      "n": 2,
+      "successes": 2,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.3424,
+        1.0
+      ],
+      "avg_tool_calls": 2.0,
+      "avg_steps": 5.0,
+      "p50_wall_ms": 714,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "tool-data-reconcile": {
+      "n": 2,
+      "successes": 2,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.3424,
+        1.0
+      ],
+      "avg_tool_calls": 4.0,
+      "avg_steps": 7.0,
+      "p50_wall_ms": 22,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "tool-expense-policy": {
+      "n": 2,
+      "successes": 2,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.3424,
+        1.0
+      ],
+      "avg_tool_calls": 11.0,
+      "avg_steps": 14.0,
+      "p50_wall_ms": 22,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "tool-refund-approval": {
+      "n": 2,
+      "successes": 2,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.3424,
+        1.0
+      ],
+      "avg_tool_calls": 10.0,
+      "avg_steps": 13.0,
+      "p50_wall_ms": 26,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "tool-ticket-triage": {
+      "n": 2,
+      "successes": 2,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.3424,
+        1.0
+      ],
+      "avg_tool_calls": 7.0,
+      "avg_steps": 10.0,
+      "p50_wall_ms": 16,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    }
+  },
+  "taxonomy": {
+    "none": 36
+  },
+  "recovery": {
+    "clean": {
+      "n": 32,
+      "success_rate": 1.0
+    },
+    "fault": {
+      "n": 2,
+      "success_rate": 1.0
+    },
+    "drift": {
+      "n": 2,
+      "success_rate": 1.0
+    },
+    "recovery_lift": 0.0
+  },
+  "rebound": {
+    "n": 8,
+    "score": 1.0,
+    "sr": 1.0,
+    "rrs": 1.0,
+    "es": 1.0,
+    "cq": 1.0,
+    "weights": {
+      "sr": 0.4,
+      "rrs": 0.25,
+      "es": 0.2,
+      "cq": 0.15
+    }
+  },
+  "pass_at_k": {
+    "pass@2": 1.0
+  },
+  "per_task_rows": [
+    {
+      "task_id": "rb-ambiguity-port",
+      "suite": "rebound",
+      "difficulty": "medium",
+      "n": 2,
+      "success_rate": 1.0,
+      "avg_tool_calls": 0.0,
+      "avg_efficiency": 1.0,
+      "failed_checks": [],
+      "failure_modes": []
+    },
+    {
+      "task_id": "rb-budget-oneshot",
+      "suite": "rebound",
+      "difficulty": "medium",
+      "n": 2,
+      "success_rate": 1.0,
+      "avg_tool_calls": 1.0,
+      "avg_efficiency": 1.0,
+      "failed_checks": [],
+      "failure_modes": []
+    },
+    {
+      "task_id": "rb-drift-config",
+      "suite": "rebound",
+      "difficulty": "medium",
+      "n": 2,
+      "success_rate": 1.0,
+      "avg_tool_calls": 3.0,
+      "avg_efficiency": 1.0,
+      "failed_checks": [],
+      "failure_modes": []
+    },
+    {
+      "task_id": "rb-fault-retry",
+      "suite": "rebound",
+      "difficulty": "easy",
+      "n": 2,
+      "success_rate": 1.0,
+      "avg_tool_calls": 2.0,
+      "avg_efficiency": 1.0,
+      "failed_checks": [],
+      "failure_modes": []
+    },
+    {
+      "task_id": "repo-csv-ledger",
+      "suite": "repo-fix",
+      "difficulty": "hard",
+      "n": 2,
+      "success_rate": 1.0,
+      "avg_tool_calls": 1.0,
+      "avg_efficiency": 1.0,
+      "failed_checks": [],
+      "failure_modes": []
+    },
+    {
+      "task_id": "repo-invoice-round",
+      "suite": "repo-fix",
+      "difficulty": "medium",
+      "n": 2,
+      "success_rate": 1.0,
+      "avg_tool_calls": 1.0,
+      "avg_efficiency": 1.0,
+      "failed_checks": [],
+      "failure_modes": []
+    },
+    {
+      "task_id": "repo-log-rotate",
+      "suite": "repo-fix",
+      "difficulty": "medium",
+      "n": 2,
+      "success_rate": 1.0,
+      "avg_tool_calls": 1.0,
+      "avg_efficiency": 1.0,
+      "failed_checks": [],
+      "failure_modes": []
+    },
+    {
+      "task_id": "repo-retry-engine",
+      "suite": "repo-fix",
+      "difficulty": "hard",
+      "n": 2,
+      "success_rate": 1.0,
+      "avg_tool_calls": 1.0,
+      "avg_efficiency": 1.0,
+      "failed_checks": [],
+      "failure_modes": []
+    },
+    {
+      "task_id": "term-backup-manifest",
+      "suite": "terminal-lite",
+      "difficulty": "medium",
+      "n": 2,
+      "success_rate": 1.0,
+      "avg_tool_calls": 2.0,
+      "avg_efficiency": 1.0,
+      "failed_checks": [],
+      "failure_modes": []
+    },
+    {
+      "task_id": "term-config-migrate",
+      "suite": "terminal-lite",
+      "difficulty": "medium",
+      "n": 2,
+      "success_rate": 1.0,
+      "avg_tool_calls": 2.0,
+      "avg_efficiency": 1.0,
+      "failed_checks": [],
+      "failure_modes": []
+    },
+    {
+      "task_id": "term-csv-clean",
+      "suite": "terminal-lite",
+      "difficulty": "easy",
+      "n": 2,
+      "success_rate": 1.0,
+      "avg_tool_calls": 2.0,
+      "avg_efficiency": 1.0,
+      "failed_checks": [],
+      "failure_modes": []
+    },
+    {
+      "task_id": "term-dup-audit",
+      "suite": "terminal-lite",
+      "difficulty": "hard",
+      "n": 2,
+      "success_rate": 1.0,
+      "avg_tool_calls": 2.0,
+      "avg_efficiency": 1.0,
+      "failed_checks": [],
+      "failure_modes": []
+    },
+    {
+      "task_id": "term-log-report",
+      "suite": "terminal-lite",
+      "difficulty": "easy",
+      "n": 2,
+      "success_rate": 1.0,
+      "avg_tool_calls": 2.0,
+      "avg_efficiency": 1.0,
+      "failed_checks": [],
+      "failure_modes": []
+    },
+    {
+      "task_id": "term-port-conflict",
+      "suite": "terminal-lite",
+      "difficulty": "hard",
+      "n": 2,
+      "success_rate": 1.0,
+      "avg_tool_calls": 2.0,
+      "avg_efficiency": 1.0,
+      "failed_checks": [],
+      "failure_modes": []
+    },
+    {
+      "task_id": "tool-data-reconcile",
+      "suite": "tool-use",
+      "difficulty": "hard",
+      "n": 2,
+      "success_rate": 1.0,
+      "avg_tool_calls": 4.0,
+      "avg_efficiency": 1.0,
+      "failed_checks": [],
+      "failure_modes": []
+    },
+    {
+      "task_id": "tool-expense-policy",
+      "suite": "tool-use",
+      "difficulty": "hard",
+      "n": 2,
+      "success_rate": 1.0,
+      "avg_tool_calls": 11.0,
+      "avg_efficiency": 1.0,
+      "failed_checks": [],
+      "failure_modes": []
+    },
+    {
+      "task_id": "tool-refund-approval",
+      "suite": "tool-use",
+      "difficulty": "medium",
+      "n": 2,
+      "success_rate": 1.0,
+      "avg_tool_calls": 10.0,
+      "avg_efficiency": 1.0,
+      "failed_checks": [],
+      "failure_modes": []
+    },
+    {
+      "task_id": "tool-ticket-triage",
+      "suite": "tool-use",
+      "difficulty": "easy",
+      "n": 2,
+      "success_rate": 1.0,
+      "avg_tool_calls": 7.0,
+      "avg_efficiency": 1.0,
+      "failed_checks": [],
+      "failure_modes": []
+    }
+  ],
+  "run": {
+    "run_id": "exp-oracle",
+    "agent": "scripted",
+    "model": "mock",
+    "episodes": 36,
+    "generated_at": "2026-10-26T22:59:48+0800"
+  }
+}

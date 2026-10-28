@@ -1,0 +1,397 @@
+[
+  {
+    "name": "oracle",
+    "description": "脚本化 oracle：按解重放",
+    "run_id": "exp-oracle",
+    "suite_filter": null,
+    "config": {
+      "suite": null,
+      "task_ids": null,
+      "agent": "scripted",
+      "policy": "oracle",
+      "model": "mock",
+      "samples": 2,
+      "workers": 4,
+      "noise": 0.0,
+      "seed": 0,
+      "limit": null,
+      "temperature": 0.0
+    },
+    "summary": {
+      "n": 36,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.9036,
+        1.0
+      ],
+      "avg_tool_calls": 3.0,
+      "avg_efficiency": 1.0,
+      "avg_steps": 5.67,
+      "pass_at_k": {
+        "pass@2": 1.0
+      },
+      "recovery": {
+        "clean": {
+          "n": 32,
+          "success_rate": 1.0
+        },
+        "fault": {
+          "n": 2,
+          "success_rate": 1.0
+        },
+        "drift": {
+          "n": 2,
+          "success_rate": 1.0
+        },
+        "recovery_lift": 0.0
+      },
+      "rebound": {
+        "n": 8,
+        "score": 1.0,
+        "sr": 1.0,
+        "rrs": 1.0,
+        "es": 1.0,
+        "cq": 1.0,
+        "weights": {
+          "sr": 0.4,
+          "rrs": 0.25,
+          "es": 0.2,
+          "cq": 0.15
+        }
+      },
+      "taxonomy": {
+        "none": 36
+      }
+    }
+  },
+  {
+    "name": "fragile",
+    "description": "遇错即放弃（不恢复）",
+    "run_id": "exp-fragile",
+    "suite_filter": "rebound",
+    "config": {
+      "suite": "rebound",
+      "task_ids": null,
+      "agent": "scripted",
+      "policy": "fragile",
+      "model": "mock",
+      "samples": 2,
+      "workers": 4,
+      "noise": 0.0,
+      "seed": 0,
+      "limit": null,
+      "temperature": 0.0
+    },
+    "summary": {
+      "n": 8,
+      "success_rate": 0.5,
+      "wilson_ci": [
+        0.2152,
+        0.7848
+      ],
+      "avg_tool_calls": 1.0,
+      "avg_efficiency": 0.5,
+      "avg_steps": 3.5,
+      "pass_at_k": {
+        "pass@2": 0.5
+      },
+      "recovery": {
+        "clean": {
+          "n": 4,
+          "success_rate": 1.0
+        },
+        "fault": {
+          "n": 2,
+          "success_rate": 0.0
+        },
+        "drift": {
+          "n": 2,
+          "success_rate": 0.0
+        },
+        "recovery_lift": -1.0
+      },
+      "rebound": {
+        "n": 8,
+        "score": 0.45,
+        "sr": 0.5,
+        "rrs": 0.0,
+        "es": 0.5,
+        "cq": 1.0,
+        "weights": {
+          "sr": 0.4,
+          "rrs": 0.25,
+          "es": 0.2,
+          "cq": 0.15
+        }
+      },
+      "taxonomy": {
+        "gave_up": 4,
+        "none": 4
+      }
+    }
+  },
+  {
+    "name": "retry",
+    "description": "失败后重试同一动作",
+    "run_id": "exp-retry",
+    "suite_filter": "rebound",
+    "config": {
+      "suite": "rebound",
+      "task_ids": null,
+      "agent": "scripted",
+      "policy": "retry",
+      "model": "mock",
+      "samples": 2,
+      "workers": 4,
+      "noise": 0.0,
+      "seed": 0,
+      "limit": null,
+      "temperature": 0.0
+    },
+    "summary": {
+      "n": 8,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.6756,
+        1.0
+      ],
+      "avg_tool_calls": 2.5,
+      "avg_efficiency": 0.8512,
+      "avg_steps": 5.75,
+      "pass_at_k": {
+        "pass@2": 1.0
+      },
+      "recovery": {
+        "clean": {
+          "n": 4,
+          "success_rate": 1.0
+        },
+        "fault": {
+          "n": 2,
+          "success_rate": 1.0
+        },
+        "drift": {
+          "n": 2,
+          "success_rate": 1.0
+        },
+        "recovery_lift": 0.0
+      },
+      "rebound": {
+        "n": 8,
+        "score": 0.9702,
+        "sr": 1.0,
+        "rrs": 1.0,
+        "es": 0.8512,
+        "cq": 1.0,
+        "weights": {
+          "sr": 0.4,
+          "rrs": 0.25,
+          "es": 0.2,
+          "cq": 0.15
+        }
+      },
+      "taxonomy": {
+        "none": 8
+      }
+    }
+  },
+  {
+    "name": "silent",
+    "description": "跳过澄清直接猜",
+    "run_id": "exp-silent",
+    "suite_filter": "rebound",
+    "config": {
+      "suite": "rebound",
+      "task_ids": null,
+      "agent": "scripted",
+      "policy": "silent",
+      "model": "mock",
+      "samples": 2,
+      "workers": 4,
+      "noise": 0.0,
+      "seed": 0,
+      "limit": null,
+      "temperature": 0.0
+    },
+    "summary": {
+      "n": 8,
+      "success_rate": 0.75,
+      "wilson_ci": [
+        0.4093,
+        0.9285
+      ],
+      "avg_tool_calls": 1.5,
+      "avg_efficiency": 0.75,
+      "avg_steps": 3.5,
+      "pass_at_k": {
+        "pass@2": 0.75
+      },
+      "recovery": {
+        "clean": {
+          "n": 4,
+          "success_rate": 0.5
+        },
+        "fault": {
+          "n": 2,
+          "success_rate": 1.0
+        },
+        "drift": {
+          "n": 2,
+          "success_rate": 1.0
+        },
+        "recovery_lift": 0.5
+      },
+      "rebound": {
+        "n": 8,
+        "score": 0.7,
+        "sr": 0.75,
+        "rrs": 1.0,
+        "es": 0.75,
+        "cq": 0.0,
+        "weights": {
+          "sr": 0.4,
+          "rrs": 0.25,
+          "es": 0.2,
+          "cq": 0.15
+        }
+      },
+      "taxonomy": {
+        "no_attempt": 2,
+        "none": 6
+      }
+    }
+  },
+  {
+    "name": "early-stop",
+    "description": "提前交卷（少做最后一步）",
+    "run_id": "exp-early-stop",
+    "suite_filter": "rebound",
+    "config": {
+      "suite": "rebound",
+      "task_ids": null,
+      "agent": "scripted",
+      "policy": "early_stop",
+      "model": "mock",
+      "samples": 2,
+      "workers": 4,
+      "noise": 0.0,
+      "seed": 0,
+      "limit": null,
+      "temperature": 0.0
+    },
+    "summary": {
+      "n": 8,
+      "success_rate": 0.0,
+      "wilson_ci": [
+        0.0,
+        0.3244
+      ],
+      "avg_tool_calls": 0.75,
+      "avg_efficiency": 0.0,
+      "avg_steps": 3.0,
+      "pass_at_k": {
+        "pass@2": 0.0
+      },
+      "recovery": {
+        "clean": {
+          "n": 4,
+          "success_rate": 0.0
+        },
+        "fault": {
+          "n": 2,
+          "success_rate": 0.0
+        },
+        "drift": {
+          "n": 2,
+          "success_rate": 0.0
+        },
+        "recovery_lift": 0.0
+      },
+      "rebound": {
+        "n": 8,
+        "score": 0.15,
+        "sr": 0.0,
+        "rrs": 0.0,
+        "es": 0.0,
+        "cq": 1.0,
+        "weights": {
+          "sr": 0.4,
+          "rrs": 0.25,
+          "es": 0.2,
+          "cq": 0.15
+        }
+      },
+      "taxonomy": {
+        "fault_unrecovered": 4,
+        "no_attempt": 4
+      }
+    }
+  },
+  {
+    "name": "react-noise",
+    "description": "ReAct + mock 模型 + 30% 行为噪声",
+    "run_id": "exp-react-noise",
+    "suite_filter": null,
+    "config": {
+      "suite": null,
+      "task_ids": null,
+      "agent": "react",
+      "policy": "oracle",
+      "model": "mock:0.3",
+      "samples": 2,
+      "workers": 4,
+      "noise": 0.0,
+      "seed": 0,
+      "limit": null,
+      "temperature": 0.0
+    },
+    "summary": {
+      "n": 36,
+      "success_rate": 0.4444,
+      "wilson_ci": [
+        0.2954,
+        0.6042
+      ],
+      "avg_tool_calls": 3.06,
+      "avg_efficiency": 0.4375,
+      "avg_steps": 5.08,
+      "pass_at_k": {
+        "pass@2": 0.7222
+      },
+      "recovery": {
+        "clean": {
+          "n": 32,
+          "success_rate": 0.4375
+        },
+        "fault": {
+          "n": 2,
+          "success_rate": 0.5
+        },
+        "drift": {
+          "n": 2,
+          "success_rate": 0.5
+        },
+        "recovery_lift": 0.0625
+      },
+      "rebound": {
+        "n": 8,
+        "score": 0.4583,
+        "sr": 0.375,
+        "rrs": 0.5,
+        "es": 0.3542,
+        "cq": 0.75,
+        "weights": {
+          "sr": 0.4,
+          "rrs": 0.25,
+          "es": 0.2,
+          "cq": 0.15
+        }
+      },
+      "taxonomy": {
+        "fault_unrecovered": 2,
+        "none": 16,
+        "wrong_output": 18
+      }
+    }
+  }
+]

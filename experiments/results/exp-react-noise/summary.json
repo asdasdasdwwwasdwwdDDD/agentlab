@@ -1,0 +1,740 @@
+{
+  "overall": {
+    "n": 36,
+    "successes": 16,
+    "success_rate": 0.4444,
+    "wilson_ci": [
+      0.2954,
+      0.6042
+    ],
+    "avg_tool_calls": 3.06,
+    "avg_steps": 5.08,
+    "p50_wall_ms": 657,
+    "avg_efficiency": 0.4375,
+    "avg_cost_usd": 0.0,
+    "avg_tokens": 4496.7
+  },
+  "by_suite": {
+    "rebound": {
+      "n": 8,
+      "successes": 3,
+      "success_rate": 0.375,
+      "wilson_ci": [
+        0.1368,
+        0.6943
+      ],
+      "avg_tool_calls": 1.88,
+      "avg_steps": 3.75,
+      "p50_wall_ms": 371,
+      "avg_efficiency": 0.3542,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 1660.9
+    },
+    "repo-fix": {
+      "n": 8,
+      "successes": 4,
+      "success_rate": 0.5,
+      "wilson_ci": [
+        0.2152,
+        0.7848
+      ],
+      "avg_tool_calls": 1.12,
+      "avg_steps": 3.75,
+      "p50_wall_ms": 1507,
+      "avg_efficiency": 0.5,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 2997.8
+    },
+    "terminal-lite": {
+      "n": 12,
+      "successes": 9,
+      "success_rate": 0.75,
+      "wilson_ci": [
+        0.4677,
+        0.9111
+      ],
+      "avg_tool_calls": 2.08,
+      "avg_steps": 3.67,
+      "p50_wall_ms": 684,
+      "avg_efficiency": 0.7431,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 3781.8
+    },
+    "tool-use": {
+      "n": 8,
+      "successes": 0,
+      "success_rate": 0.0,
+      "wilson_ci": [
+        0.0,
+        0.3244
+      ],
+      "avg_tool_calls": 7.62,
+      "avg_steps": 9.88,
+      "p50_wall_ms": 366,
+      "avg_efficiency": 0.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 9904.0
+    }
+  },
+  "by_difficulty": {
+    "medium": {
+      "n": 16,
+      "successes": 7,
+      "success_rate": 0.4375,
+      "wilson_ci": [
+        0.231,
+        0.6682
+      ],
+      "avg_tool_calls": 2.56,
+      "avg_steps": 4.56,
+      "p50_wall_ms": 643,
+      "avg_efficiency": 0.4375,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 3486.5
+    },
+    "easy": {
+      "n": 8,
+      "successes": 4,
+      "success_rate": 0.5,
+      "wilson_ci": [
+        0.2152,
+        0.7848
+      ],
+      "avg_tool_calls": 3.25,
+      "avg_steps": 5.0,
+      "p50_wall_ms": 637,
+      "avg_efficiency": 0.4792,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 4235.5
+    },
+    "hard": {
+      "n": 12,
+      "successes": 5,
+      "success_rate": 0.4167,
+      "wilson_ci": [
+        0.1933,
+        0.6805
+      ],
+      "avg_tool_calls": 3.58,
+      "avg_steps": 5.83,
+      "p50_wall_ms": 707,
+      "avg_efficiency": 0.4097,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 6017.8
+    }
+  },
+  "by_agent": {
+    "react/mock": {
+      "n": 36,
+      "successes": 16,
+      "success_rate": 0.4444,
+      "wilson_ci": [
+        0.2954,
+        0.6042
+      ],
+      "avg_tool_calls": 3.06,
+      "avg_steps": 5.08,
+      "p50_wall_ms": 657,
+      "avg_efficiency": 0.4375,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 4496.7
+    }
+  },
+  "by_task": {
+    "rb-ambiguity-port": {
+      "n": 2,
+      "successes": 0,
+      "success_rate": 0.0,
+      "wilson_ci": [
+        0.0,
+        0.6576
+      ],
+      "avg_tool_calls": 1.0,
+      "avg_steps": 4.5,
+      "p50_wall_ms": 367,
+      "avg_efficiency": 0.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 1682.0
+    },
+    "rb-budget-oneshot": {
+      "n": 2,
+      "successes": 1,
+      "success_rate": 0.5,
+      "wilson_ci": [
+        0.0945,
+        0.9055
+      ],
+      "avg_tool_calls": 1.0,
+      "avg_steps": 2.0,
+      "p50_wall_ms": 351,
+      "avg_efficiency": 0.5,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 891.5
+    },
+    "rb-drift-config": {
+      "n": 2,
+      "successes": 1,
+      "success_rate": 0.5,
+      "wilson_ci": [
+        0.0945,
+        0.9055
+      ],
+      "avg_tool_calls": 3.0,
+      "avg_steps": 4.5,
+      "p50_wall_ms": 994,
+      "avg_efficiency": 0.5,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 2153.5
+    },
+    "rb-fault-retry": {
+      "n": 2,
+      "successes": 1,
+      "success_rate": 0.5,
+      "wilson_ci": [
+        0.0945,
+        0.9055
+      ],
+      "avg_tool_calls": 2.5,
+      "avg_steps": 4.0,
+      "p50_wall_ms": 525,
+      "avg_efficiency": 0.4167,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 1916.5
+    },
+    "repo-csv-ledger": {
+      "n": 2,
+      "successes": 1,
+      "success_rate": 0.5,
+      "wilson_ci": [
+        0.0945,
+        0.9055
+      ],
+      "avg_tool_calls": 1.0,
+      "avg_steps": 3.5,
+      "p50_wall_ms": 1510,
+      "avg_efficiency": 0.5,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 2526.0
+    },
+    "repo-invoice-round": {
+      "n": 2,
+      "successes": 1,
+      "success_rate": 0.5,
+      "wilson_ci": [
+        0.0945,
+        0.9055
+      ],
+      "avg_tool_calls": 1.0,
+      "avg_steps": 3.5,
+      "p50_wall_ms": 1482,
+      "avg_efficiency": 0.5,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 3134.5
+    },
+    "repo-log-rotate": {
+      "n": 2,
+      "successes": 1,
+      "success_rate": 0.5,
+      "wilson_ci": [
+        0.0945,
+        0.9055
+      ],
+      "avg_tool_calls": 1.0,
+      "avg_steps": 3.5,
+      "p50_wall_ms": 1547,
+      "avg_efficiency": 0.5,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 2624.5
+    },
+    "repo-retry-engine": {
+      "n": 2,
+      "successes": 1,
+      "success_rate": 0.5,
+      "wilson_ci": [
+        0.0945,
+        0.9055
+      ],
+      "avg_tool_calls": 1.5,
+      "avg_steps": 4.5,
+      "p50_wall_ms": 1944,
+      "avg_efficiency": 0.5,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 3706.0
+    },
+    "term-backup-manifest": {
+      "n": 2,
+      "successes": 2,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.3424,
+        1.0
+      ],
+      "avg_tool_calls": 2.0,
+      "avg_steps": 3.5,
+      "p50_wall_ms": 736,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 3010.5
+    },
+    "term-config-migrate": {
+      "n": 2,
+      "successes": 1,
+      "success_rate": 0.5,
+      "wilson_ci": [
+        0.0945,
+        0.9055
+      ],
+      "avg_tool_calls": 2.0,
+      "avg_steps": 3.5,
+      "p50_wall_ms": 649,
+      "avg_efficiency": 0.5,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 2384.5
+    },
+    "term-csv-clean": {
+      "n": 2,
+      "successes": 2,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.3424,
+        1.0
+      ],
+      "avg_tool_calls": 2.0,
+      "avg_steps": 3.5,
+      "p50_wall_ms": 639,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 3603.0
+    },
+    "term-dup-audit": {
+      "n": 2,
+      "successes": 2,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.3424,
+        1.0
+      ],
+      "avg_tool_calls": 2.0,
+      "avg_steps": 3.5,
+      "p50_wall_ms": 728,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 3446.5
+    },
+    "term-log-report": {
+      "n": 2,
+      "successes": 1,
+      "success_rate": 0.5,
+      "wilson_ci": [
+        0.0945,
+        0.9055
+      ],
+      "avg_tool_calls": 2.0,
+      "avg_steps": 3.5,
+      "p50_wall_ms": 655,
+      "avg_efficiency": 0.5,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 2972.5
+    },
+    "term-port-conflict": {
+      "n": 2,
+      "successes": 1,
+      "success_rate": 0.5,
+      "wilson_ci": [
+        0.0945,
+        0.9055
+      ],
+      "avg_tool_calls": 2.5,
+      "avg_steps": 4.5,
+      "p50_wall_ms": 862,
+      "avg_efficiency": 0.4583,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 7273.5
+    },
+    "tool-data-reconcile": {
+      "n": 2,
+      "successes": 0,
+      "success_rate": 0.0,
+      "wilson_ci": [
+        0.0,
+        0.6576
+      ],
+      "avg_tool_calls": 4.5,
+      "avg_steps": 6.5,
+      "p50_wall_ms": 360,
+      "avg_efficiency": 0.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 4947.5
+    },
+    "tool-expense-policy": {
+      "n": 2,
+      "successes": 0,
+      "success_rate": 0.0,
+      "wilson_ci": [
+        0.0,
+        0.6576
+      ],
+      "avg_tool_calls": 10.0,
+      "avg_steps": 12.5,
+      "p50_wall_ms": 692,
+      "avg_efficiency": 0.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 14207.5
+    },
+    "tool-refund-approval": {
+      "n": 2,
+      "successes": 0,
+      "success_rate": 0.0,
+      "wilson_ci": [
+        0.0,
+        0.6576
+      ],
+      "avg_tool_calls": 9.5,
+      "avg_steps": 11.5,
+      "p50_wall_ms": 494,
+      "avg_efficiency": 0.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 12011.0
+    },
+    "tool-ticket-triage": {
+      "n": 2,
+      "successes": 0,
+      "success_rate": 0.0,
+      "wilson_ci": [
+        0.0,
+        0.6576
+      ],
+      "avg_tool_calls": 6.5,
+      "avg_steps": 9.0,
+      "p50_wall_ms": 344,
+      "avg_efficiency": 0.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 8450.0
+    }
+  },
+  "taxonomy": {
+    "fault_unrecovered": 2,
+    "none": 16,
+    "wrong_output": 18
+  },
+  "recovery": {
+    "clean": {
+      "n": 32,
+      "success_rate": 0.4375
+    },
+    "fault": {
+      "n": 2,
+      "success_rate": 0.5
+    },
+    "drift": {
+      "n": 2,
+      "success_rate": 0.5
+    },
+    "recovery_lift": 0.0625
+  },
+  "rebound": {
+    "n": 8,
+    "score": 0.4583,
+    "sr": 0.375,
+    "rrs": 0.5,
+    "es": 0.3542,
+    "cq": 0.75,
+    "weights": {
+      "sr": 0.4,
+      "rrs": 0.25,
+      "es": 0.2,
+      "cq": 0.15
+    }
+  },
+  "pass_at_k": {
+    "pass@2": 0.7222
+  },
+  "per_task_rows": [
+    {
+      "task_id": "rb-ambiguity-port",
+      "suite": "rebound",
+      "difficulty": "medium",
+      "n": 2,
+      "success_rate": 0.0,
+      "avg_tool_calls": 1.0,
+      "avg_efficiency": 0.0,
+      "failed_checks": [
+        "clarification_done",
+        "manifest_content",
+        "manifest_exists"
+      ],
+      "failure_modes": [
+        "wrong_output"
+      ]
+    },
+    {
+      "task_id": "rb-budget-oneshot",
+      "suite": "rebound",
+      "difficulty": "medium",
+      "n": 2,
+      "success_rate": 0.5,
+      "avg_tool_calls": 1.0,
+      "avg_efficiency": 0.5,
+      "failed_checks": [
+        "manifest_content",
+        "merged_content",
+        "merged_exists"
+      ],
+      "failure_modes": [
+        "wrong_output"
+      ]
+    },
+    {
+      "task_id": "rb-drift-config",
+      "suite": "rebound",
+      "difficulty": "medium",
+      "n": 2,
+      "success_rate": 0.5,
+      "avg_tool_calls": 3.0,
+      "avg_efficiency": 0.5,
+      "failed_checks": [
+        "config_restored",
+        "deploy_content",
+        "deploy_exists"
+      ],
+      "failure_modes": [
+        "fault_unrecovered"
+      ]
+    },
+    {
+      "task_id": "rb-fault-retry",
+      "suite": "rebound",
+      "difficulty": "easy",
+      "n": 2,
+      "success_rate": 0.5,
+      "avg_tool_calls": 2.5,
+      "avg_efficiency": 0.4167,
+      "failed_checks": [
+        "summary_exists",
+        "summary_values"
+      ],
+      "failure_modes": [
+        "fault_unrecovered"
+      ]
+    },
+    {
+      "task_id": "repo-csv-ledger",
+      "suite": "repo-fix",
+      "difficulty": "hard",
+      "n": 2,
+      "success_rate": 0.5,
+      "avg_tool_calls": 1.0,
+      "avg_efficiency": 0.5,
+      "failed_checks": [
+        "export_order_ints",
+        "parse_quoted_comma",
+        "sign_and_rounding"
+      ],
+      "failure_modes": [
+        "wrong_output"
+      ]
+    },
+    {
+      "task_id": "repo-invoice-round",
+      "suite": "repo-fix",
+      "difficulty": "medium",
+      "n": 2,
+      "success_rate": 0.5,
+      "avg_tool_calls": 1.0,
+      "avg_efficiency": 0.5,
+      "failed_checks": [
+        "all_items_and_tax",
+        "rounding_half_up"
+      ],
+      "failure_modes": [
+        "wrong_output"
+      ]
+    },
+    {
+      "task_id": "repo-log-rotate",
+      "suite": "repo-fix",
+      "difficulty": "medium",
+      "n": 2,
+      "success_rate": 0.5,
+      "avg_tool_calls": 1.0,
+      "avg_efficiency": 0.5,
+      "failed_checks": [
+        "keep_count_and_order",
+        "size_cap",
+        "tie_break_stability"
+      ],
+      "failure_modes": [
+        "wrong_output"
+      ]
+    },
+    {
+      "task_id": "repo-retry-engine",
+      "suite": "repo-fix",
+      "difficulty": "hard",
+      "n": 2,
+      "success_rate": 0.5,
+      "avg_tool_calls": 1.5,
+      "avg_efficiency": 0.5,
+      "failed_checks": [
+        "attempt_cap",
+        "summary_order"
+      ],
+      "failure_modes": [
+        "wrong_output"
+      ]
+    },
+    {
+      "task_id": "term-backup-manifest",
+      "suite": "terminal-lite",
+      "difficulty": "medium",
+      "n": 2,
+      "success_rate": 1.0,
+      "avg_tool_calls": 2.0,
+      "avg_efficiency": 1.0,
+      "failed_checks": [],
+      "failure_modes": []
+    },
+    {
+      "task_id": "term-config-migrate",
+      "suite": "terminal-lite",
+      "difficulty": "medium",
+      "n": 2,
+      "success_rate": 0.5,
+      "avg_tool_calls": 2.0,
+      "avg_efficiency": 0.5,
+      "failed_checks": [
+        "config_json_content",
+        "config_json_exists"
+      ],
+      "failure_modes": [
+        "wrong_output"
+      ]
+    },
+    {
+      "task_id": "term-csv-clean",
+      "suite": "terminal-lite",
+      "difficulty": "easy",
+      "n": 2,
+      "success_rate": 1.0,
+      "avg_tool_calls": 2.0,
+      "avg_efficiency": 1.0,
+      "failed_checks": [],
+      "failure_modes": []
+    },
+    {
+      "task_id": "term-dup-audit",
+      "suite": "terminal-lite",
+      "difficulty": "hard",
+      "n": 2,
+      "success_rate": 1.0,
+      "avg_tool_calls": 2.0,
+      "avg_efficiency": 1.0,
+      "failed_checks": [],
+      "failure_modes": []
+    },
+    {
+      "task_id": "term-log-report",
+      "suite": "terminal-lite",
+      "difficulty": "easy",
+      "n": 2,
+      "success_rate": 0.5,
+      "avg_tool_calls": 2.0,
+      "avg_efficiency": 0.5,
+      "failed_checks": [
+        "report_values"
+      ],
+      "failure_modes": [
+        "wrong_output"
+      ]
+    },
+    {
+      "task_id": "term-port-conflict",
+      "suite": "terminal-lite",
+      "difficulty": "hard",
+      "n": 2,
+      "success_rate": 0.5,
+      "avg_tool_calls": 2.5,
+      "avg_efficiency": 0.4583,
+      "failed_checks": [
+        "report_json_content",
+        "report_json_exists",
+        "summary_content"
+      ],
+      "failure_modes": [
+        "wrong_output"
+      ]
+    },
+    {
+      "task_id": "tool-data-reconcile",
+      "suite": "tool-use",
+      "difficulty": "hard",
+      "n": 2,
+      "success_rate": 0.0,
+      "avg_tool_calls": 4.5,
+      "avg_efficiency": 0.0,
+      "failed_checks": [
+        "billing_called",
+        "recon_answer",
+        "systems_and_tickets"
+      ],
+      "failure_modes": [
+        "wrong_output"
+      ]
+    },
+    {
+      "task_id": "tool-expense-policy",
+      "suite": "tool-use",
+      "difficulty": "hard",
+      "n": 2,
+      "success_rate": 0.0,
+      "avg_tool_calls": 10.0,
+      "avg_efficiency": 0.0,
+      "failed_checks": [
+        "lookups_and_tickets"
+      ],
+      "failure_modes": [
+        "wrong_output"
+      ]
+    },
+    {
+      "task_id": "tool-refund-approval",
+      "suite": "tool-use",
+      "difficulty": "medium",
+      "n": 2,
+      "success_rate": 0.0,
+      "avg_tool_calls": 9.5,
+      "avg_efficiency": 0.0,
+      "failed_checks": [
+        "inputs_and_side_effects",
+        "refund_answer",
+        "refund_applied"
+      ],
+      "failure_modes": [
+        "wrong_output"
+      ]
+    },
+    {
+      "task_id": "tool-ticket-triage",
+      "suite": "tool-use",
+      "difficulty": "easy",
+      "n": 2,
+      "success_rate": 0.0,
+      "avg_tool_calls": 6.5,
+      "avg_efficiency": 0.0,
+      "failed_checks": [
+        "tickets_created",
+        "tool_usage_complete"
+      ],
+      "failure_modes": [
+        "wrong_output"
+      ]
+    }
+  ],
+  "run": {
+    "run_id": "exp-react-noise",
+    "agent": "react",
+    "model": "mock:0.3",
+    "episodes": 36,
+    "generated_at": "2026-10-26T23:00:03+0800"
+  }
+}

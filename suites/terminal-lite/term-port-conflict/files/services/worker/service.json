@@ -1,0 +1,14 @@
+{
+  "service": {
+    "name": "worker",
+    "enabled": true
+  },
+  "http": {
+    "host": "127.0.0.1",
+    "port": 8080
+  },
+  "health": {
+    "host": "127.0.0.1",
+    "port": 8085
+  }
+}

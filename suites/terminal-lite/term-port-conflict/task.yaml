@@ -1,0 +1,167 @@
+id: term-port-conflict
+name: 多格式服务配置的端口冲突诊断
+category: terminal
+difficulty: hard
+tags: [shell, config, diagnosis, json]
+visibility: public
+prompt: |
+  值班排查端口冲突。`services/` 下每个子目录是一个服务，配置文件二选一：
+
+  - `service.ini`（INI）：`[service]` 段有 `name` 和 `enabled`；其余每个段是一个监听器，含 `host` 和 `port`；
+  - `service.json`：结构为 `{"service": {"name": ..., "enabled": ...}, "<段名>": {"host": ..., "port": ...}}`。
+
+  根目录的 `.env` 可以覆盖端口：`WORKER_HTTP_PORT=8090` 表示 worker 服务 http 段的 `port`
+  （即“服务名_段名_PORT”全大写、非字母数字转下划线）。
+
+  规则：
+
+  1. 只分析 `enabled` 为 true 的服务；`enabled` 为 false 的服务跳过，服务名记入 `disabled_services`。
+  2. 监听器标识为 `<服务名>.<段名>`（服务名取 `[service].name`，两者都转小写）。
+  3. 覆盖规则：若 `.env` 中存在对应的 `<服务名>_<段名>_PORT`，用它的值替换该监听器的 `port`，
+     并把该监听器标识记入 `overridden`。
+  4. 冲突判定：同一 `port` 上，两个**不同服务**的监听器满足任一条即为冲突：
+     - host 完全相同 → `same-host`；
+     - 其中一个是 `0.0.0.0`（通配全部网卡）→ `wildcard`。
+     同一端口同时出现两种时，`reason` 记为 `wildcard`。
+  5. 输出 `diagnosis/report.json`（UTF-8、2 空格缩进、以换行结尾），顶层恰好这些键：
+     - `conflicts`：按 `port` 升序。每项 `{"port": <整数>, "reason": "same-host"|"wildcard",
+       "listeners": [该端口上的所有监听器标识]}`，`listeners` 按字典序升序；
+     - `effective_ports`：对象，键为监听器标识，值为覆盖后的整数端口（包含所有启用服务的监听器）；
+     - `overridden`：升序的监听器标识数组；
+     - `disabled_services`：升序的服务名数组；
+     - `port_owners`：对象，键为端口的十进制字符串，值为该端口上所有监听器标识（升序）；
+       只包含至少有一个启用监听器的端口。
+  6. 再写 `diagnosis/SUMMARY.md`（UTF-8、LF）：每条冲突一行，格式为
+     `<port> <listeners 用逗号连接> <reason>`，按 `port` 升序，文件以单个换行结尾；
+     没有冲突时为空文件。
+  7. `.env` 和 `services/` 下的文件都不得修改。
+
+  用可移植命令完成（例如 `python -c "..."`），不要联网。
+max_steps: 14
+timeout_s: 90
+workspace:
+  copy_files: true
+tools: [shell, read_file, write_file, list_dir]
+budget:
+  max_tool_calls: 14
+  max_tokens: 30000
+  max_wall_s: 300
+  oracle_tool_calls: 2
+verifier:
+  pass_threshold: 1.0
+  checks:
+    - name: report_json_exists
+      kind: file_exists
+      path: diagnosis/report.json
+      weight: 0.5
+      required: false
+    - name: report_json_content
+      kind: python
+      func: check_report
+      weight: 2.0
+      required: true
+    - name: summary_content
+      kind: python
+      func: check_summary
+      weight: 1.0
+      required: true
+    - name: inputs_untouched
+      kind: state_unchanged
+      paths: [.env, services/api/service.ini, services/worker/service.json]
+      weight: 0.5
+      required: true
+solution:
+  actions:
+    - kind: read_file
+      args:
+        path: .env
+    - kind: shell
+      args:
+        command: |
+          python -c "import configparser, json
+          from pathlib import Path
+
+          def load_service(service_dir):
+              ini = service_dir / 'service.ini'
+              if ini.exists():
+                  parser = configparser.ConfigParser(interpolation=None)
+                  parser.read(ini, encoding='utf-8')
+                  meta = dict(parser.items('service')) if parser.has_section('service') else {}
+                  sections = {name: dict(parser.items(name)) for name in parser.sections() if name != 'service'}
+                  return meta, sections
+              data = json.loads((service_dir / 'service.json').read_text(encoding='utf-8'))
+              return data.get('service', {}), {name: value for name, value in data.items() if name != 'service'}
+
+          def truthy(value):
+              return str(value).strip().lower() in ('true', 'yes', 'on', '1')
+
+          env = {}
+          for line in Path('.env').read_text(encoding='utf-8').splitlines():
+              line = line.strip()
+              if line == '' or line.startswith('#') or '=' not in line:
+                  continue
+              key, value = line.split('=', 1)
+              env[key.strip()] = value.strip()
+
+          listeners = []
+          disabled = []
+          overridden = []
+          for service_dir in sorted(Path('services').iterdir()):
+              if not service_dir.is_dir():
+                  continue
+              meta, sections = load_service(service_dir)
+              name = str(meta.get('name', service_dir.name)).strip().lower()
+              if not truthy(meta.get('enabled', 'true')):
+                  disabled.append(name)
+                  continue
+              for section, values in sections.items():
+                  label = name + '.' + section.strip().lower()
+                  port = int(str(values.get('port', '0')).strip())
+                  env_key = (name + '_' + section + '_PORT').upper().replace('-', '_').replace('.', '_')
+                  if env_key in env:
+                      port = int(env[env_key])
+                      overridden.append(label)
+                  listeners.append({'label': label, 'host': str(values.get('host', '')).strip(), 'port': port})
+          Path('work').mkdir(exist_ok=True)
+          inventory = {'listeners': listeners, 'disabled': disabled, 'overridden': overridden}
+          Path('work/listeners.json').write_text(json.dumps(inventory, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+          print('listeners:', len(listeners), 'disabled:', disabled, 'overridden:', overridden)"
+    - kind: read_file
+      args:
+        path: work/listeners.json
+    - kind: shell
+      args:
+        command: |
+          python -c "import json
+          from pathlib import Path
+          inventory = json.loads(Path('work/listeners.json').read_text(encoding='utf-8'))
+          listeners = inventory['listeners']
+          owners = {}
+          for item in listeners:
+              owners.setdefault(item['port'], []).append(item['label'])
+          for port in owners:
+              owners[port] = sorted(owners[port])
+          conflicts = []
+          for port in sorted(owners):
+              labels = owners[port]
+              hosts = {item['label']: item['host'] for item in listeners if item['port'] == port}
+              kinds = []
+              for first_index in range(len(labels)):
+                  for second_index in range(first_index + 1, len(labels)):
+                      first, second = labels[first_index], labels[second_index]
+                      if first.split('.')[0] == second.split('.')[0]:
+                          continue
+                      if hosts[first] == hosts[second]:
+                          kinds.append('same-host')
+                      elif hosts[first] == '0.0.0.0' or hosts[second] == '0.0.0.0':
+                          kinds.append('wildcard')
+              if kinds:
+                  reason = 'wildcard' if 'wildcard' in kinds else 'same-host'
+                  conflicts.append({'port': port, 'reason': reason, 'listeners': labels})
+          report = {'conflicts': conflicts, 'effective_ports': {item['label']: item['port'] for item in sorted(listeners, key=lambda item: item['label'])}, 'overridden': sorted(inventory['overridden']), 'disabled_services': sorted(inventory['disabled']), 'port_owners': {str(port): owners[port] for port in sorted(owners)}}
+          Path('diagnosis').mkdir(exist_ok=True)
+          Path('diagnosis/report.json').write_text(json.dumps(report, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+          lines = [str(item['port']) + ' ' + ','.join(item['listeners']) + ' ' + item['reason'] for item in conflicts]
+          Path('diagnosis/SUMMARY.md').write_text('\n'.join(lines) + ('\n' if lines else ''), encoding='utf-8')
+          print(json.dumps(report, ensure_ascii=False))"
+

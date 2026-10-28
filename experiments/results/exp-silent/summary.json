@@ -1,0 +1,238 @@
+{
+  "overall": {
+    "n": 8,
+    "successes": 6,
+    "success_rate": 0.75,
+    "wilson_ci": [
+      0.4093,
+      0.9285
+    ],
+    "avg_tool_calls": 1.5,
+    "avg_steps": 3.5,
+    "p50_wall_ms": 344,
+    "avg_efficiency": 0.75,
+    "avg_cost_usd": 0.0,
+    "avg_tokens": 0.0
+  },
+  "by_suite": {
+    "rebound": {
+      "n": 8,
+      "successes": 6,
+      "success_rate": 0.75,
+      "wilson_ci": [
+        0.4093,
+        0.9285
+      ],
+      "avg_tool_calls": 1.5,
+      "avg_steps": 3.5,
+      "p50_wall_ms": 344,
+      "avg_efficiency": 0.75,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    }
+  },
+  "by_difficulty": {
+    "medium": {
+      "n": 6,
+      "successes": 4,
+      "success_rate": 0.6667,
+      "wilson_ci": [
+        0.3,
+        0.9032
+      ],
+      "avg_tool_calls": 1.33,
+      "avg_steps": 3.33,
+      "p50_wall_ms": 347,
+      "avg_efficiency": 0.6667,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "easy": {
+      "n": 2,
+      "successes": 2,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.3424,
+        1.0
+      ],
+      "avg_tool_calls": 2.0,
+      "avg_steps": 4.0,
+      "p50_wall_ms": 335,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    }
+  },
+  "by_agent": {
+    "scripted/mock": {
+      "n": 8,
+      "successes": 6,
+      "success_rate": 0.75,
+      "wilson_ci": [
+        0.4093,
+        0.9285
+      ],
+      "avg_tool_calls": 1.5,
+      "avg_steps": 3.5,
+      "p50_wall_ms": 344,
+      "avg_efficiency": 0.75,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    }
+  },
+  "by_task": {
+    "rb-ambiguity-port": {
+      "n": 2,
+      "successes": 0,
+      "success_rate": 0.0,
+      "wilson_ci": [
+        0.0,
+        0.6576
+      ],
+      "avg_tool_calls": 0.0,
+      "avg_steps": 3.0,
+      "p50_wall_ms": 22,
+      "avg_efficiency": 0.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "rb-budget-oneshot": {
+      "n": 2,
+      "successes": 2,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.3424,
+        1.0
+      ],
+      "avg_tool_calls": 1.0,
+      "avg_steps": 2.0,
+      "p50_wall_ms": 347,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "rb-drift-config": {
+      "n": 2,
+      "successes": 2,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.3424,
+        1.0
+      ],
+      "avg_tool_calls": 3.0,
+      "avg_steps": 5.0,
+      "p50_wall_ms": 941,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    },
+    "rb-fault-retry": {
+      "n": 2,
+      "successes": 2,
+      "success_rate": 1.0,
+      "wilson_ci": [
+        0.3424,
+        1.0
+      ],
+      "avg_tool_calls": 2.0,
+      "avg_steps": 4.0,
+      "p50_wall_ms": 335,
+      "avg_efficiency": 1.0,
+      "avg_cost_usd": 0.0,
+      "avg_tokens": 0.0
+    }
+  },
+  "taxonomy": {
+    "no_attempt": 2,
+    "none": 6
+  },
+  "recovery": {
+    "clean": {
+      "n": 4,
+      "success_rate": 0.5
+    },
+    "fault": {
+      "n": 2,
+      "success_rate": 1.0
+    },
+    "drift": {
+      "n": 2,
+      "success_rate": 1.0
+    },
+    "recovery_lift": 0.5
+  },
+  "rebound": {
+    "n": 8,
+    "score": 0.7,
+    "sr": 0.75,
+    "rrs": 1.0,
+    "es": 0.75,
+    "cq": 0.0,
+    "weights": {
+      "sr": 0.4,
+      "rrs": 0.25,
+      "es": 0.2,
+      "cq": 0.15
+    }
+  },
+  "pass_at_k": {
+    "pass@2": 0.75
+  },
+  "per_task_rows": [
+    {
+      "task_id": "rb-ambiguity-port",
+      "suite": "rebound",
+      "difficulty": "medium",
+      "n": 2,
+      "success_rate": 0.0,
+      "avg_tool_calls": 0.0,
+      "avg_efficiency": 0.0,
+      "failed_checks": [
+        "clarification_done"
+      ],
+      "failure_modes": [
+        "no_attempt"
+      ]
+    },
+    {
+      "task_id": "rb-budget-oneshot",
+      "suite": "rebound",
+      "difficulty": "medium",
+      "n": 2,
+      "success_rate": 1.0,
+      "avg_tool_calls": 1.0,
+      "avg_efficiency": 1.0,
+      "failed_checks": [],
+      "failure_modes": []
+    },
+    {
+      "task_id": "rb-drift-config",
+      "suite": "rebound",
+      "difficulty": "medium",
+      "n": 2,
+      "success_rate": 1.0,
+      "avg_tool_calls": 3.0,
+      "avg_efficiency": 1.0,
+      "failed_checks": [],
+      "failure_modes": []
+    },
+    {
+      "task_id": "rb-fault-retry",
+      "suite": "rebound",
+      "difficulty": "easy",
+      "n": 2,
+      "success_rate": 1.0,
+      "avg_tool_calls": 2.0,
+      "avg_efficiency": 1.0,
+      "failed_checks": [],
+      "failure_modes": []
+    }
+  ],
+  "run": {
+    "run_id": "exp-silent",
+    "agent": "scripted",
+    "model": "mock",
+    "episodes": 8,
+    "generated_at": "2026-10-26T22:59:54+0800"
+  }
+}

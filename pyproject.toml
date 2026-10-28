@@ -1,0 +1,37 @@
+[project]
+name = "agentlab"
+version = "0.1.0"
+description = "Agent / RL environment evaluation harness with REBOUND-Bench"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "pydantic>=2.5",
+  "PyYAML>=6.0",
+  "httpx>=0.27",
+  "rich>=13.0",
+  "matplotlib>=3.7",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4"]
+
+[project.scripts]
+agentlab = "agentlab.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["agentlab*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = [
+  "e2e: 端到端评测测试（需要可用的 shell）",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"

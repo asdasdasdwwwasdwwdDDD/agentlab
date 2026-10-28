@@ -1,0 +1,115 @@
+id: repo-csv-ledger
+name: 账单 CSV：引号逗号、负数、取整、导出
+category: repo
+difficulty: hard
+tags: [python, bugfix, csv, decimal]
+visibility: public
+prompt: |
+  账单导入服务在 2024-01 的对账单上出错了，`python -m pytest -q` 现在是红的：
+
+  1. 描述里带逗号的记录（CSV 里用双引号包起来）会直接把行切错，整行解析失败。
+  2. 负数金额用会计写法 `(12.34)` 表示，现在完全没处理。
+  3. 金额换算用浮点数 + `round`，`0.005`、`12.345` 这类会少 1 分（必须四舍五入、.5 进位）。
+  4. 导出的账户顺序不稳定（依赖 dict 插入顺序），而且 `total_cents` 是浮点数。
+
+  请修复 `ledger/` 下的实现，公开 API 不变（`load_entries(text)`、`totals_by_account(entries)`、
+  `to_dict(entries)`）。验收口径：
+
+  - `load_entries`：按标准 CSV 解析（支持引号内的逗号）；`amount` 形如 `(12.34)` 表示负数；
+    金额四舍五入到分、.5 进位；`amount_cents` 必须是 `int`；空白行忽略；
+  - `to_dict`：`entry_count` 为条目数；`accounts` 按 `account` 字典序升序，每项
+    `{"account": name, "total_cents": int}`；
+  - `data/january.csv` 是样例数据，不要修改；`tests/` 下的测试也不要修改
+    （判分使用隐藏测试）。
+
+  不要修改 `tests/` 下的测试文件（判分使用隐藏测试）。
+max_steps: 12
+timeout_s: 90
+workspace:
+  copy_files: true
+tools: [shell, read_file, write_file, list_dir]
+budget:
+  max_tool_calls: 10
+  max_tokens: 50000
+  max_wall_s: 300
+  oracle_tool_calls: 1
+verifier:
+  pass_threshold: 1.0
+  checks:
+    - name: parse_quoted_comma
+      kind: python
+      func: check_parse_quoted_comma
+      weight: 1.0
+      required: true
+    - name: sign_and_rounding
+      kind: python
+      func: check_sign_and_rounding
+      weight: 1.5
+      required: true
+    - name: export_order_ints
+      kind: python
+      func: check_export_order_and_ints
+      weight: 1.5
+      required: true
+    - name: visible_tests_untouched
+      kind: state_unchanged
+      paths: [tests/test_ledger.py]
+      weight: 0.5
+      required: true
+
+solution:
+  actions:
+    - kind: write_file
+      args:
+        path: ledger/parse.py
+        content: |
+          """记账 CSV 解析。"""
+
+          import csv
+          from decimal import ROUND_HALF_UP, Decimal
+
+
+          def _to_cents(raw):
+              text = raw.strip()
+              negative = text.startswith('(') and text.endswith(')')
+              if negative:
+                  text = text[1:-1].strip()
+              cents = int((Decimal(text) * 100).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+              return -cents if negative else cents
+
+
+          def load_entries(text):
+              """解析 CSV 文本（表头 date,account,description,amount），返回 dict 列表。"""
+              entries = []
+              reader = csv.DictReader(text.splitlines())
+              for row in reader:
+                  entries.append({
+                      'date': (row.get('date') or '').strip(),
+                      'account': (row.get('account') or '').strip(),
+                      'description': (row.get('description') or '').strip(),
+                      'amount_cents': _to_cents(row.get('amount') or '0'),
+                  })
+              return entries
+    - kind: write_file
+      args:
+        path: ledger/export.py
+        content: |
+          """导出汇总结构。"""
+
+          from .aggregate import totals_by_account
+
+
+          def to_dict(entries):
+              totals = totals_by_account(entries)
+              accounts = [
+                  {'account': name, 'total_cents': int(totals[name])}
+                  for name in sorted(totals)
+              ]
+              return {
+                  'entry_count': len(entries),
+                  'accounts': accounts,
+              }
+    - kind: shell
+      args:
+        command: |
+          python -m pytest -q

@@ -1,0 +1,80 @@
+id: rb-ambiguity-port
+name: 欠定需求下的澄清与交付
+category: rebound
+difficulty: medium
+tags: [rebound, ambiguity, clarification, config]
+visibility: public
+
+prompt: |
+  请为服务生成 out/manifest.json，内容为：
+  {"service": "<服务名>", "port": <整数端口>, "env": "<部署环境>"}。
+
+  服务名可以从 inventory/service.yaml 读取；**端口和部署环境这两项只能向用户确认**
+  （使用 ask_user 动作，总共最多问 2 次）。确认这两项之后再写文件，不要猜测，
+  写完后可以直接 finish。
+
+max_steps: 8
+timeout_s: 30
+
+workspace:
+  files:
+    inventory/service.yaml: |
+      name: checkout-api
+      replicas: 2
+      owner: payments-team
+
+tools: [shell, read_file, write_file, list_dir, ask_user]
+
+ambiguity:
+  clarification_budget: 2
+  required_clarifications: 2
+  answers:
+    - match: "端口|port"
+      reply: "端口是 8443，别写错了"
+    - match: "环境|env|阶段|stage"
+      reply: "部署环境是 staging"
+    - default: "这个我不能随便说，请只问端口或部署环境"
+
+budget:
+  max_tool_calls: 6
+  max_tokens: 20000
+  max_wall_s: 120
+  oracle_tool_calls: 1
+
+verifier:
+  pass_threshold: 1.0
+  checks:
+    - name: manifest_exists
+      kind: file_exists
+      path: out/manifest.json
+      required: true
+    - name: manifest_content
+      kind: python
+      func: check_manifest
+      weight: 2.0
+      required: true
+    - name: clarification_done
+      kind: python
+      func: check_clarification
+      weight: 1.0
+      required: true
+
+notes: |
+  检查项同时约束"内容正确"与"信息获取充分"：silent 策略会跳过 ask_user、直接写答案，
+  内容检查通过但澄清检查失败，从而把 CQ（clarification quality）与成功率分开度量。
+
+solution:
+  actions:
+    - kind: read_file
+      args: {path: inventory/service.yaml}
+    - kind: ask_user
+      args: {question: "这个服务的端口是多少？"}
+    - kind: ask_user
+      args: {question: "部署环境是什么？"}
+    - kind: write_file
+      args:
+        path: out/manifest.json
+        content: |
+          {"service": "checkout-api", "port": 8443, "env": "staging"}
+    - kind: finish
+      args: {message: "已生成 manifest"}

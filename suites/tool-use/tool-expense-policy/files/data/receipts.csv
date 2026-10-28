@@ -1,0 +1,7 @@
+receipt_id,employee_id,category,amount,currency,date
+x-01,E-01,hotel,120.00,USD,2024-08-01
+x-02,E-01,meal,138.00,CNY,2024-08-01
+x-03,E-02,hotel,70.00,EUR,2024-08-02
+x-04,E-03,taxi,5000,JPY,2024-08-02
+x-05,E-03,meal,25.00,USD,2024-08-03
+x-06,E-02,misc,20.00,CNY,2024-08-03

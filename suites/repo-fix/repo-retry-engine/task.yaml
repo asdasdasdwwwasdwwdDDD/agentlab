@@ -1,0 +1,125 @@
+id: repo-retry-engine
+name: 重试引擎：次数、异常传播、退避、排序
+category: repo
+difficulty: hard
+tags: [python, bugfix, exceptions, retry]
+visibility: public
+prompt: |
+  重试组件 `retrykit/` 有一批在线问题，`python -m pytest -q` 现在是红的：
+
+  1. `attempts=3` 时函数被调用了 **4** 次（多试了一次）。
+  2. 重试耗尽后抛的是 `RuntimeError('retry failed ...')`，把原始异常类型和消息吞掉了；
+     调用方按 `except OSError` 完全接不到。
+  3. `backoff_delays(4)` 返回了 4 个间隔，而且第一个是 `1.0`（应该是 `0.5`）。
+  4. `summarize_attempts` 按 `duration_ms` 排序，日志顺序被打乱。
+
+  请修复 `retrykit/` 下的实现，公开 API 不变。验收口径：
+
+  - `run_with_retry(fn, attempts=3, delays=None)`：总调用次数恰好 `attempts` 次（`attempts>=1`，
+    小于 1 时抛 `ValueError`）；`FATAL = (TypeError, ValueError)` 里的异常立即原样抛出、不重试；
+    其它异常在还有剩余尝试时按 `delays[i]` 睡眠后重试；用尽后**原样**抛出最后一次异常
+    （类型与消息都不变，不得包装）；
+  - `backoff_delays(attempts, base=0.5, cap=4.0)`：返回 `attempts-1` 个间隔
+    `[base, 2*base, 4*base, ...]`，每个不超过 `cap`；`attempts <= 1` 返回 `[]`；
+  - `summarize_attempts(records)`：按 `attempt` 升序返回新列表，每项 `dict(record, index=1..n)`，
+    不修改入参。
+
+  不要修改 `tests/` 下的测试文件（判分使用隐藏测试）。
+max_steps: 12
+timeout_s: 90
+workspace:
+  copy_files: true
+tools: [shell, read_file, write_file, list_dir]
+budget:
+  max_tool_calls: 10
+  max_tokens: 50000
+  max_wall_s: 300
+  oracle_tool_calls: 1
+verifier:
+  pass_threshold: 1.0
+  checks:
+    - name: attempt_cap
+      kind: python
+      func: check_attempt_cap
+      weight: 1.5
+      required: true
+    - name: fatal_and_success
+      kind: python
+      func: check_fatal_and_success
+      weight: 1.5
+      required: true
+    - name: backoff_sequence
+      kind: python
+      func: check_backoff_sequence
+      weight: 1.0
+      required: true
+    - name: summary_order
+      kind: python
+      func: check_summary_order
+      weight: 1.0
+      required: true
+    - name: visible_tests_untouched
+      kind: state_unchanged
+      paths: [tests/test_retry.py]
+      weight: 0.5
+      required: true
+
+solution:
+  actions:
+    - kind: write_file
+      args:
+        path: retrykit/engine.py
+        content: |
+          """带重试的执行器。"""
+
+          import time
+
+          FATAL = (TypeError, ValueError)
+
+
+          def run_with_retry(fn, attempts=3, delays=None):
+              """最多尝试 attempts 次（attempts >= 1）。
+
+              - 遇到 FATAL 异常立即原样抛出，不重试；
+              - 其它异常重试，直到成功或用尽 attempts 次；
+              - 用尽后原样抛出最后一次异常（类型与消息不变）。
+              """
+              if attempts < 1:
+                  raise ValueError('attempts 必须 >= 1')
+              last_error = None
+              for index in range(attempts):
+                  try:
+                      return fn()
+                  except FATAL:
+                      raise
+                  except Exception as error:
+                      last_error = error
+                      if delays and index < len(delays) and index < attempts - 1:
+                          time.sleep(delays[index])
+              raise last_error
+    - kind: write_file
+      args:
+        path: retrykit/backoff.py
+        content: |
+          """指数退避序列。"""
+
+
+          def backoff_delays(attempts, base=0.5, cap=4.0):
+              """attempts 次总尝试对应 attempts-1 个重试间隔：base, 2*base, ...（不超过 cap）。"""
+              count = max(0, attempts - 1)
+              return [min(cap, base * (2 ** index)) for index in range(count)]
+    - kind: write_file
+      args:
+        path: retrykit/report.py
+        content: |
+          """尝试记录汇总。"""
+
+
+          def summarize_attempts(records):
+              """按 attempt 升序返回新列表，每项追加 index（从 1 开始）；不修改输入。"""
+              ordered = sorted(records, key=lambda record: record.get('attempt', 0))
+              return [dict(record, index=index + 1) for index, record in enumerate(ordered)]
+    - kind: shell
+      args:
+        command: |
+          python -m pytest -q

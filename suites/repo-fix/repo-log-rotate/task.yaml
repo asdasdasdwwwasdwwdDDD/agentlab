@@ -1,0 +1,124 @@
+id: repo-log-rotate
+name: 日志轮转：多留一个、并列顺序、清单格式
+category: repo
+difficulty: medium
+tags: [python, bugfix, sorting, stability]
+visibility: public
+prompt: |
+  日志轮转模块 `rotator/` 有三处错误，`python -m pytest -q` 现在是红的。
+
+  1. 保留数量会多留一个：`keep=2` 时实际保留了 3 个。
+  2. 排序不稳定：`mtime` 相同的文件之间，淘汰顺序不确定（`reverse=True` 把并列项也反转了）。
+     正确口径是按 `(mtime, path)` 升序排序，**从最旧的开始淘汰**，也就是并列时 `path`
+     字典序更大的更“新”会被保留。
+  3. `render_prune_log(pruned)` 少了一列 size，且空列表返回了 `'\n'`（应该是空字符串）。
+
+  请修复实现，保持公开 API 不变（`Entry` 字段、`plan_prune(entries, keep, max_total_size=0)`、
+  `retained_size(pruned, kept)`、`render_prune_log(pruned)`）。验收口径：
+
+  - `plan_prune` 返回 `(pruned, kept)`，两者都按 `(mtime, path)` 升序排列；
+  - 保留数量至多 `keep` 个（`keep>=1`）；保留的是按 `(mtime, path)` 升序的**最后** `keep` 个之前，
+    还要受 `max_total_size` 限制：当 `max_total_size > 0` 时，从最旧的开始淘汰，直到保留文件的
+    字节总量 <= `max_total_size`；
+  - `render_prune_log`：每条一行，`path`、`mtime`、`size` 用 TAB 分隔，末尾恰好一个换行；
+    空列表返回 `''`。
+
+  不要修改 `tests/` 下的测试文件（判分使用隐藏测试）。
+max_steps: 10
+timeout_s: 90
+workspace:
+  copy_files: true
+tools: [shell, read_file, write_file, list_dir]
+budget:
+  max_tool_calls: 10
+  max_tokens: 50000
+  max_wall_s: 300
+  oracle_tool_calls: 1
+verifier:
+  pass_threshold: 1.0
+  checks:
+    - name: keep_count_and_order
+      kind: python
+      func: check_keep_count_and_order
+      weight: 1.5
+      required: true
+    - name: tie_break_stability
+      kind: python
+      func: check_tie_break_stability
+      weight: 1.5
+      required: true
+    - name: size_cap
+      kind: python
+      func: check_size_cap
+      weight: 1.0
+      required: true
+    - name: render_prune_log
+      kind: python
+      func: check_render_prune_log
+      weight: 1.0
+      required: true
+    - name: visible_tests_untouched
+      kind: state_unchanged
+      paths: [tests/test_rotator.py]
+      weight: 0.5
+      required: true
+
+solution:
+  actions:
+    - kind: write_file
+      args:
+        path: rotator/selection.py
+        content: |
+          """轮转淘汰选择。"""
+
+          from dataclasses import dataclass
+
+
+          @dataclass(frozen=True)
+          class Entry:
+              path: str
+              mtime: int
+              size: int
+
+
+          def plan_prune(entries, keep, max_total_size=0):
+              """返回 (pruned, kept)。
+
+              规则：按 (mtime, path) 升序排序，从最旧的开始淘汰，直到保留数量 <= keep，
+              且（max_total_size > 0 时）保留文件的字节总量 <= max_total_size。
+              """
+              ordered = sorted(entries, key=lambda entry: (entry.mtime, entry.path))
+              kept = []
+              retained = 0
+              for entry in reversed(ordered):
+                  if len(kept) >= keep:
+                      break
+                  if max_total_size > 0 and retained + entry.size > max_total_size:
+                      break
+                  kept.append(entry)
+                  retained += entry.size
+              kept_paths = {entry.path for entry in kept}
+              pruned = [entry for entry in ordered if entry.path not in kept_paths]
+              kept = sorted(kept, key=lambda entry: (entry.mtime, entry.path))
+              return pruned, kept
+
+
+          def retained_size(pruned, kept):
+              return sum(entry.size for entry in kept)
+    - kind: write_file
+      args:
+        path: rotator/report.py
+        content: |
+          """淘汰清单渲染。"""
+
+
+          def render_prune_log(pruned):
+              """每条一行：path<TAB>mtime<TAB>size，末尾一个换行；空列表返回空字符串。"""
+              if not pruned:
+                  return ''
+              lines = ['%s\t%d\t%d' % (entry.path, entry.mtime, entry.size) for entry in pruned]
+              return '\n'.join(lines) + '\n'
+    - kind: shell
+      args:
+        command: |
+          python -m pytest -q

@@ -1,0 +1,69 @@
+id: rb-budget-oneshot
+name: 预算受限下的一次性交付
+category: rebound
+difficulty: medium
+tags: [rebound, budget, efficiency, json]
+visibility: public
+
+prompt: |
+  workspace 里有两个数据文件：
+  - data/left.json：{"a": 1, "b": 2}
+  - data/right.json：{"b": 20, "c": 3}
+
+  请生成 out/merged.json，规则如下：
+  1. 合并两个对象的键；同名键取两者之和；
+  2. 所有值按整数处理；
+  3. 输出键按字母升序，紧凑 JSON（无多余空格），UTF-8；
+  4. 再生成 out/manifest.txt，内容恰为一行：`keys=<键的数量> sum=<所有值之和>`。
+
+  注意：本任务**最多只能使用 3 次工具调用**（shell/tool）。请先想清楚再执行，
+  用尽量少的调用一次完成，不要在失败重试上浪费预算。
+
+max_steps: 6
+timeout_s: 30
+
+workspace:
+  files:
+    data/left.json: |
+      {"a": 1, "b": 2}
+    data/right.json: |
+      {"b": 20, "c": 3}
+
+tools: [shell, read_file, write_file, list_dir]
+
+budget:
+  max_tool_calls: 3
+  max_tokens: 20000
+  max_wall_s: 120
+  oracle_tool_calls: 1
+
+verifier:
+  pass_threshold: 1.0
+  checks:
+    - name: merged_exists
+      kind: file_exists
+      path: out/merged.json
+      required: true
+    - name: merged_content
+      kind: python
+      func: check_merged
+      weight: 2.0
+      required: true
+    - name: manifest_content
+      kind: python
+      func: check_manifest
+      weight: 1.0
+      required: true
+
+notes: |
+  成功路径只需 1 次 shell 调用；超过 3 次调用会被 runner 判为 budget 失败。
+  ES 以 oracle_tool_calls=1、cap=3 归一，用于度量"一次做对"的效率。
+
+solution:
+  actions:
+    - kind: shell
+      args:
+        command: >-
+          python -c "import json,pathlib; left=json.load(open('data/left.json',encoding='utf-8')); right=json.load(open('data/right.json',encoding='utf-8')); merged={k: sum(d.get(k,0) for d in (left,right)) for k in set(left)|set(right)}; pathlib.Path('out').mkdir(exist_ok=True); pathlib.Path('out/merged.json').write_text(json.dumps(merged, sort_keys=True, separators=(',',':')), encoding='utf-8'); pathlib.Path('out/manifest.txt').write_text(f'keys={len(merged)} sum={sum(merged.values())}\n', encoding='utf-8')"
+    - kind: finish
+      args: {message: "已生成 merged.json 与 manifest.txt"}

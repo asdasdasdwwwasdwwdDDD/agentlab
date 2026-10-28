@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgentLab · 运行流程 / Runtime Flow</title>
+<style>
+  :root{
+    --bg:#05070c;
+    --ink:#e9eefb;
+    --ink2:#93a3bb;
+    --ink3:#5f708a;
+    --line:rgba(140,170,215,.13);
+    --mono:"JetBrains Mono","Cascadia Code","SF Mono",Consolas,ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);overflow:hidden;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:var(--mono)}
+  body::before{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(1000px 640px at 10% -10%,rgba(56,189,248,.13),transparent 62%),
+      radial-gradient(920px 640px at 92% 110%,rgba(167,139,250,.13),transparent 62%),
+      radial-gradient(760px 520px at 52% 42%,rgba(52,211,153,.05),transparent 72%);
+  }
+  body::after{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:
+      linear-gradient(rgba(255,255,255,.021) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.021) 1px,transparent 1px);
+    background-size:54px 54px;
+    -webkit-mask-image:radial-gradient(ellipse at 50% 46%,#000 38%,transparent 86%);
+    mask-image:radial-gradient(ellipse at 50% 46%,#000 38%,transparent 86%);
+  }
+
+  /* ---------------- topbar ---------------- */
+  .topbar{
+    position:relative;z-index:30;height:62px;display:flex;align-items:center;gap:18px;
+    padding:0 20px;border-bottom:1px solid rgba(140,170,215,.09);
+    background:rgba(5,7,12,.62);backdrop-filter:blur(10px);
+  }
+  .brand{display:flex;align-items:center;gap:10px;flex:none}
+  .logo{
+    width:28px;height:28px;border-radius:8px;display:grid;place-items:center;flex:none;
+    background:linear-gradient(150deg,rgba(56,189,248,.22),rgba(167,139,250,.22));
+    border:1px solid rgba(140,190,255,.28);color:#cfe6ff;font-size:12px;
+    box-shadow:0 0 18px -6px rgba(56,189,248,.5) inset;
+  }
+  .t1{font-size:12px;letter-spacing:.16em;font-weight:600;color:#dbe7fb}
+  .t1 span{color:#5f708a;font-weight:400}
+  .t2{font-size:10.5px;color:#5f708a;margin-top:2px;letter-spacing:.02em}
+  .legend{display:flex;gap:6px;margin-left:8px;flex-wrap:nowrap}
+  .chip{
+    display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;cursor:pointer;
+    font-size:10.5px;color:#8698b1;background:rgba(255,255,255,.028);
+    border:1px solid rgba(140,170,215,.12);transition:.16s;white-space:nowrap;
+  }
+  .chip i{width:6px;height:6px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c);flex:none}
+  .chip:hover{color:#dbe7fb;border-color:rgba(140,190,255,.3)}
+  .chip.on{color:#eaf2ff;border-color:color-mix(in srgb,var(--c) 55%,transparent);background:color-mix(in srgb,var(--c) 12%,transparent)}
+  .acts{margin-left:auto;display:flex;align-items:center;gap:8px;flex:none}
+  button{
+    font:inherit;font-size:11.5px;color:#a8b8cf;background:rgba(255,255,255,.035);
+    border:1px solid rgba(140,170,215,.16);border-radius:8px;padding:6px 11px;cursor:pointer;
+    display:inline-flex;align-items:center;gap:6px;transition:.16s;white-space:nowrap;
+  }
+  button:hover{color:#eaf2ff;border-color:rgba(140,190,255,.36);background:rgba(255,255,255,.06)}
+  button:active{transform:translateY(1px)}
+  button.primary{
+    color:#04121a;font-weight:600;
+    background:linear-gradient(180deg,#8fe3ff,#4cc6e8);
+    border-color:#7fd8f5;box-shadow:0 6px 20px -10px #38bdf8;
+  }
+  button.primary:hover{background:linear-gradient(180deg,#a6ebff,#5cd0f0);color:#04121a}
+  .zoomval{font-size:10.5px;color:#5f708a;min-width:40px;text-align:center}
+  .prog{font-size:10.5px;color:#5f708a;letter-spacing:.08em}
+
+  /* ---------------- stage ---------------- */
+  .stage{position:fixed;left:0;right:0;top:62px;bottom:0;z-index:1;overflow:hidden}
+  #viewport{position:absolute;inset:0;overflow:hidden;cursor:grab;touch-action:none}
+  #viewport.dragging{cursor:grabbing}
+  #canvas{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+  #edges{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+  .edge{fill:none;stroke:rgba(160,190,230,.44);stroke-width:1.7;stroke-linecap:round;transition:.25s}
+  .edge.warm{stroke:rgba(120,215,255,.75);stroke-width:2.2;filter:drop-shadow(0 0 6px rgba(56,189,248,.45))}
+  .edge.dash{stroke-dasharray:6 6;animation:flow 1.4s linear infinite}
+  @keyframes flow{to{stroke-dashoffset:-24}}
+  .elabel{font-family:var(--mono);font-size:9.5px;fill:#5f708a;letter-spacing:.06em;paint-order:stroke;stroke:#05070c;stroke-width:3.2px;stroke-linejoin:round}
+  .elabel.hot{fill:#8fd9ff}
+
+  /* ---------------- node ---------------- */
+  .node{
+    position:absolute;border-radius:15px;cursor:pointer;overflow:hidden;
+    padding:15px 17px 13px;display:flex;flex-direction:column;
+    background:linear-gradient(164deg,rgba(19,27,44,.95) 0%,rgba(9,13,22,.97) 100%);
+    border:1px solid rgba(140,170,215,.14);
+    box-shadow:0 24px 50px -34px #000, inset 0 1px 0 rgba(255,255,255,.045);
+    transition:transform .18s ease,box-shadow .22s,border-color .22s,opacity .25s;
+  }
+  .node::before{
+    content:"";position:absolute;left:0;right:0;top:0;height:2px;
+    background:linear-gradient(90deg,var(--ac),color-mix(in srgb,var(--ac) 10%,transparent));
+  }
+  .node:hover{
+    transform:translateY(-3px);border-color:color-mix(in srgb,var(--ac) 48%,transparent);
+    box-shadow:0 30px 60px -40px #000, 0 0 30px -18px var(--ac), inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .node.sel{
+    border-color:color-mix(in srgb,var(--ac) 78%,transparent);
+    box-shadow:0 0 0 1px color-mix(in srgb,var(--ac) 45%,transparent),0 0 44px -22px var(--ac);
+  }
+  .node.active{
+    border-color:var(--ac);transform:translateY(-3px);
+    box-shadow:0 0 0 1px var(--ac),0 0 52px -20px var(--ac);
+  }
+  .node.dim{opacity:.2;filter:saturate(.35)}
+  .node .ring{position:absolute;inset:-1px;border-radius:15px;border:1px solid var(--ac);opacity:0;pointer-events:none}
+  .node.active .ring{animation:ring 1.8s ease-out infinite}
+  @keyframes ring{0%{opacity:.6;transform:scale(1)}72%{opacity:0;transform:scale(1.028)}100%{opacity:0}}
+
+  .nhead{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+  .num{
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;padding:2px 5px;border-radius:5px;
+    color:var(--ac);background:color-mix(in srgb,var(--ac) 12%,transparent);
+    border:1px solid color-mix(in srgb,var(--ac) 32%,transparent);
+  }
+  .nphase{font-family:var(--mono);font-size:9px;letter-spacing:.14em;color:#6c7f99;margin-left:auto;text-transform:uppercase}
+  .ntitle{font-size:23px;font-weight:700;letter-spacing:-.01em;line-height:1.22;color:#eef4ff}
+  .nsub{
+    font-size:12px;line-height:1.62;color:#8798b0;margin-top:7px;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  }
+  .nfoot{margin-top:auto;padding-top:9px;display:flex;gap:5px;flex-wrap:nowrap;overflow:hidden}
+  .tag{
+    font-family:var(--mono);font-size:9px;color:#7d8ea6;white-space:nowrap;
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);
+    border-radius:4px;padding:2px 5px;
+  }
+  .ghost{
+    position:absolute;right:10px;bottom:-14px;font-family:var(--mono);font-weight:800;
+    font-size:78px;line-height:1;letter-spacing:-.04em;pointer-events:none;
+    color:transparent;-webkit-text-stroke:1px color-mix(in srgb,var(--ac) 26%,transparent);
+    opacity:.55;
+  }
+
+  /* row captions */
+  .rowcap{
+    position:absolute;left:44px;display:flex;align-items:baseline;gap:10px;pointer-events:none;
+  }
+  .rowcap .p{
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;color:var(--pc);
+    border:1px solid color-mix(in srgb,var(--pc) 30%,transparent);
+    background:color-mix(in srgb,var(--pc) 8%,transparent);
+    border-radius:5px;padding:2px 6px;
+  }
+  .rowcap .d{font-size:11.5px;color:#67788f;letter-spacing:.01em}
+  .rowcap .rule{position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,color-mix(in srgb,var(--pc) 26%,transparent),transparent 70%);top:22px}
+
+  .foot{
+    position:absolute;display:flex;align-items:center;gap:14px;
+    font-family:var(--mono);font-size:9.5px;color:#4f6080;letter-spacing:.08em;
+  }
+  .foot b{color:#7f93ad;font-weight:500}
+
+  /* ---------------- console ---------------- */
+  .console{
+    position:fixed;right:18px;bottom:14px;z-index:25;width:min(600px,calc(100vw - 36px));
+    background:rgba(7,11,19,.9);border:1px solid rgba(140,170,215,.16);border-radius:12px;
+    backdrop-filter:blur(12px);box-shadow:0 24px 60px -30px #000;overflow:hidden;
+    transition:.22s;
+  }
+  .console.collapsed .c-body{height:0;padding-top:0;padding-bottom:0;border-top-color:transparent}
+  .c-head{display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid rgba(140,170,215,.1)}
+  .c-head .dot{width:6px;height:6px;border-radius:50%;background:#34d399;box-shadow:0 0 8px #34d399}
+  .c-head .t{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;color:#7f93ad}
+  .c-head .sp{margin-left:auto;display:flex;gap:6px}
+  .c-head button{padding:2px 8px;font-size:10px;border-radius:6px}
+  .c-body{
+    height:132px;overflow:auto;padding:8px 11px 10px;border-top:1px solid rgba(140,170,215,.08);
+    font-family:var(--mono);font-size:10.5px;line-height:1.75;transition:.22s;
+  }
+  .c-body .ln{white-space:pre-wrap;word-break:break-word}
+  .c-body .dim{color:#5f708a}
+  .c-body .ok{color:#5eead4}
+  .c-body .err{color:#fb7185}
+  .c-body .warn{color:#fbbf24}
+  .c-body .cmd{color:#93c5fd}
+  .c-body .say{color:#c7d5e8;font-family:inherit;font-size:11px}
+
+  /* ---------------- drawer ---------------- */
+  .drawer{
+    position:fixed;top:0;right:0;bottom:0;width:min(486px,92vw);z-index:40;
+    background:linear-gradient(180deg,rgba(11,16,26,.985),rgba(6,9,15,.99));
+    border-left:1px solid rgba(140,170,215,.16);
+    box-shadow:-40px 0 80px -50px #000;
+    transform:translateX(102%);transition:transform .26s cubic-bezier(.4,0,.2,1);
+    display:flex;flex-direction:column;
+  }
+  .drawer.open{transform:translateX(0)}
+  .d-head{padding:16px 18px 12px;border-bottom:1px solid rgba(140,170,215,.1);position:relative;flex:none}
+  .d-meta{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+  .d-meta .num{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;padding:2px 5px;border-radius:5px}
+  .d-meta .f{font-family:var(--mono);font-size:9.5px;color:#5f708a;letter-spacing:.02em}
+  .d-head h2{margin:0;font-size:21px;font-weight:700;letter-spacing:-.01em;color:#eef4ff;padding-right:30px}
+  .d-close{
+    position:absolute;right:14px;top:14px;width:26px;height:26px;padding:0;justify-content:center;
+    border-radius:7px;font-size:12px;
+  }
+  .d-body{flex:1;overflow:auto;padding:16px 18px 40px}
+  .d-body::-webkit-scrollbar{width:8px}
+  .d-body::-webkit-scrollbar-thumb{background:rgba(140,170,215,.18);border-radius:8px}
+  .sec{margin-bottom:19px}
+  .sec-h{
+    font-family:var(--mono);font-size:9px;letter-spacing:.18em;color:#4f6080;
+    text-transform:uppercase;margin-bottom:7px;
+  }
+  .one{
+    font-size:12.5px;line-height:1.72;color:#c8d6ea;
+    border-left:2px solid var(--ac);padding:2px 0 2px 11px;
+  }
+  .d-body p{margin:0 0 9px;font-size:12px;line-height:1.78;color:#93a3bb}
+  .d-body p:last-child{margin-bottom:0}
+  .io{display:grid;grid-template-columns:1fr;gap:7px}
+  .io .row{display:flex;gap:9px;font-size:11.5px;line-height:1.6}
+  .io .k{
+    font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:#5f708a;
+    padding-top:3px;flex:none;width:30px;
+  }
+  .io .v{color:#a9b8ce}
+  pre.code{
+    margin:0;padding:11px 13px;border-radius:9px;overflow:auto;
+    background:#060a11;border:1px solid rgba(140,170,215,.13);
+    font-family:var(--mono);font-size:10.8px;line-height:1.72;color:#a9c7e8;
+    border-left:2px solid color-mix(in srgb,var(--ac) 60%,transparent);
+  }
+  pre.code::-webkit-scrollbar{height:7px}
+  pre.code::-webkit-scrollbar-thumb{background:rgba(140,170,215,.18);border-radius:8px}
+  ul.pits{margin:0;padding:0;list-style:none}
+  ul.pits li{
+    position:relative;padding-left:14px;margin-bottom:7px;font-size:11.8px;line-height:1.72;color:#93a3bb;
+  }
+  ul.pits li::before{content:"▸";position:absolute;left:0;top:0;color:color-mix(in srgb,var(--ac) 70%,transparent);font-size:10px}
+  .rel{display:flex;flex-wrap:wrap;gap:6px}
+  .rel button{
+    font-size:10.5px;padding:4px 8px;border-radius:6px;
+    font-family:var(--mono);color:#8fa3bd;background:rgba(255,255,255,.03);
+  }
+  .rel button:hover{color:#eaf2ff;border-color:color-mix(in srgb,var(--ac) 40%,transparent)}
+
+  .hint{
+    position:fixed;left:18px;bottom:16px;z-index:20;font-family:var(--mono);
+    font-size:9.5px;color:#41506b;letter-spacing:.08em;pointer-events:none;
+  }
+  @media (max-width:1180px){
+    .legend .chip .n{display:none}
+    .t2{display:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="logo mono">◈</div>
+    <div>
+      <div class="t1 mono">AGENTLAB <span>/ RUNTIME FLOW</span></div>
+      <div class="t2">一条命令 → 一个可复算的分数 · 12 个模块按真实执行顺序排列</div>
+    </div>
+  </div>
+  <div class="legend" id="legend"></div>
+  <div class="acts">
+    <span class="prog mono" id="prog"></span>
+    <button id="playBtn">▶ 播放一集</button>
+    <button id="fitBtn">适配</button>
+    <span class="zoomval mono" id="zoomVal">100%</span>
+  </div>
+</div>
+
+<div class="stage">
+  <div id="viewport">
+    <div id="canvas">
+      <svg id="edges"></svg>
+      <div id="deco"></div>
+      <div id="nodes"></div>
+    </div>
+  </div>
+</div>
+
+<div class="console collapsed" id="console">
+  <div class="c-head">
+    <span class="dot"></span>
+    <span class="t">TRACE · rb-fault-retry</span>
+    <span class="sp">
+      <button id="cClear">清空</button>
+      <button id="cToggle">展开</button>
+    </span>
+  </div>
+  <div class="c-body" id="cBody"><div class="ln dim">// 点「播放一集」看一个真实 episode 走完全流程</div></div>
+</div>
+
+<div class="hint mono">拖拽平移 · 滚轮缩放 · ← → 单步 · 空格播放</div>
+
+<aside class="drawer" id="drawer">
+  <div class="d-head">
+    <div class="d-meta">
+      <span class="num mono" id="dNum">01</span>
+      <span class="f mono" id="dFile">agentlab/cli.py</span>
+    </div>
+    <h2 id="dTitle">—</h2>
+    <button class="d-close" id="dClose">✕</button>
+  </div>
+  <div class="d-body" id="dBody"></div>
+</aside>
+
+<script>
+/* ============================================================
+   阶段定义
+   ============================================================ */
+const PHASES = {
+  p1:{ name:'准备',  c:'#38bdf8' },
+  p2:{ name:'闭环',  c:'#34d399' },
+  p3:{ name:'结算',  c:'#a78bfa' }
+};
+
+const ROWCAPS = [
+  { y:18,  phase:'p1', k:'PHASE 01', d:'把一行命令，变成一堆待跑的 episode —— 每个都带着自己的干净房间和初始文件' },
+  { y:290, phase:'p2', k:'PHASE 02', d:'唯一会循环的阶段：观测 → 动作 → 执行（本行自右向左编号 05 → 08）；轨迹、故障、指标素材全在这里产生' },
+  { y:562, phase:'p3', k:'PHASE 03', d:'判完分之后：算总账、落成可回放的产物，再决定这一批数字能不能信' }
+];
+
+/* ============================================================
+   节点（严格按运行时序 01 → 12）
+   ============================================================ */
+const NODES = [
+  {
+    id:'cli', n:'01', phase:'p1', ac:'#38bdf8', x:44, y:52,
+    title:'敲下一条命令',
+    sub:'解析子命令与参数，选好 agent 策略，然后把控制权交给 runner。',
+    tags:['cli.py','main()','5 个子命令'],
+    file:'agentlab/cli.py',
+    one:'整个项目唯一需要记住的入口。它只做一件事：把终端参数变成一次函数调用。',
+    desc:[
+      'cli.py 里没有任何评测逻辑。build_parser() 声明五个子命令（list / validate / run / report / doctor），main() 把 argv 解析成 Namespace，再调用对应的 cmd_* 函数。',
+      '拆开的收益很直接：评测逻辑可以被子进程或脚本直接 import 复用，CLI 只是一层薄壳。退出码还能反映结果 —— validate 只要有一个任务不合法就返回 1，CI 可以直接卡住。'
+    ],
+    io:{ in:'终端参数：run --suite rebound --agent scripted --samples 2', out:'RunConfig / 任务清单 / 退出码' },
+    code:`def main(argv=None):
+    args = build_parser().parse_args(argv)
+    return int(args.func(args))
+
+# 子命令只绑定一个函数，逻辑都在别处
+run_p.add_argument("--suite")
+run_p.add_argument("--samples", type=int, default=1)
+run_p.set_defaults(func=cmd_run)`,
+    pits:[
+      'rich 只是可选的美化依赖：导入失败会自动退化成 print，不会挡住主流程。',
+      '子命令用 required=True 强制指定，敲错直接报 usage，而不是静默跑一个默认动作。'
+    ],
+    rel:['registry','paths']
+  },
+  {
+    id:'registry', n:'02', phase:'p1', ac:'#38bdf8', x:464, y:52,
+    title:'把任务包装进内存',
+    sub:'扫 suites/*/*/task.yaml，用 Pydantic 严格校验，错一条就整批拒绝开跑。',
+    tags:['registry.py','spec.py','extra=forbid'],
+    file:'agentlab/core/registry.py',
+    one:'扫目录 → 读 YAML → 校验。任何一条不合法，整批任务拒绝启动。',
+    desc:[
+      'Registry 遍历 suites/<环境域>/<任务>/task.yaml，每个文件交给 load_task() 解析成 TaskSpec。',
+      '校验是刻意的严格：extra=forbid（字段名拼错直接报错）、id 必须等于目录名、category / difficulty 必须命中枚举、声明了 faults 就必须属于 rebound 类。任务写错要在开跑前炸掉，而不是跑完十分钟才发现判分永远是 False。'
+    ],
+    io:{ in:'suites/ 目录树（18 个任务 / 4 个环境域）', out:'list[LoadedTask]，每个都带着自己的 root 目录' },
+    code:`class Registry:
+    def scan(self):
+        for d in sorted(suites_dir.glob("*/*")):
+            self.tasks.append(load_task(d))   # 失败即报错
+        return self
+
+spec = TaskSpec.model_validate(raw)      # extra="forbid"
+if spec.id != root.name:                 # id 必须等于目录名
+    raise SpecError(...)`,
+    pits:[
+      '任务 id 与目录名字面不一致，是最常见的加载报错。',
+      '加载错误汇总打印后直接抛 RuntimeError —— 不做「跳过坏任务继续跑」的妥协。'
+    ],
+    rel:['cli','paths']
+  },
+  {
+    id:'paths', n:'03', phase:'p1', ac:'#38bdf8', x:884, y:52,
+    title:'建跑道、铺并发',
+    sub:'算 run_id、建结果目录、写 run_meta（含任务指纹），再把任务 × 采样丢进线程池。',
+    tags:['runner.py','RunPaths','ThreadPool'],
+    file:'agentlab/eval/runner.py',
+    one:'先建好本次运行的家，再把「任务 × 采样」铺开并行。',
+    desc:[
+      'run(config) 先算 run_id（时间戳 + agent + 模型），准备目录、写 run_meta.json —— 里面记着 Python 版本、平台、完整配置，以及每个任务的指纹。',
+      '然后把任务展开成 jobs = 任务 × 采样次数，扔进 ThreadPoolExecutor。每个 job 跑一个独立 episode、独占一个 workspace，所以并行是安全的。'
+    ],
+    io:{ in:'RunConfig（suite / samples / workers / out_dir…）', out:'run 目录 + 作业列表 + 线程池 future' },
+    code:`run_id = config.resolved_run_id()   # 时间戳__agent__model
+paths  = RunPaths.prepare(config.out_dir, run_id)
+write_meta(paths, config=..., tasks=[...])  # 任务指纹 / 环境信息
+
+jobs = [(t, s) for t in tasks for s in range(config.samples)]
+with ThreadPoolExecutor(max_workers=config.workers) as pool:
+    futs = {pool.submit(_run_episode, ...): (t.id, s)}`,
+    pits:[
+      '任务指纹让「改了任务却复用旧结果」变成可检测的问题：指纹不一致，两组分数就不能直接对比。',
+      '单个 episode 抛异常会被捕获记为 error，只打一行 warning，不拖垮整批。'
+    ],
+    rel:['registry','reset','selfcheck']
+  },
+  {
+    id:'reset', n:'04', phase:'p1', ac:'#38bdf8', x:1304, y:52,
+    title:'一集一个干净房间',
+    sub:'建目录、铺初始文件、拍一张 sha256 快照 —— 判分时靠它回答「改了什么」。',
+    tags:['shell.py','reset()','safe_resolve'],
+    file:'agentlab/envs/shell.py',
+    one:'一集一个 workspace，跑完不污染下一集；快照就是「改动基线」。',
+    desc:[
+      '_run_episode 为每个 episode 建 workspaces/<task_id>__s<idx>/，reset() 把 task.yaml 里声明的初始文件写进去（或用 files/ 整棵拷贝），然后做一次快照。',
+      '快照是关键：判分时对比 before / after，就知道 agent 到底动了哪些文件，而不只是看终态长什么样。所有路径都过 safe_resolve，写 ../../etc/passwd 会在执行前被拒绝。'
+    ],
+    io:{ in:'LoadedTask + 一个空目录', out:'初始观测文本 + snapshot_before' },
+    code:`def reset(self):
+    self.workspace.mkdir(parents=True, exist_ok=True)
+    if spec.workspace.copy_files:
+        copy_tree(self.task.root / "files", self.workspace)
+    for rel, content in spec.workspace.files.items():
+        write_text(self.workspace, rel, content)      # 路径受限
+    self.snapshot_before = snapshot(self.workspace)  # 快照`,
+    pits:[
+      '返回的观测里自带初始文件清单和可用动作，agent 不需要额外 ls 一次。',
+      '快照只存「路径 → 内容哈希」，不存内容本身，对比成本极低。'
+    ],
+    rel:['paths','agent']
+  },
+  {
+    id:'agent', n:'05', phase:'p2', ac:'#34d399', x:1304, y:330,
+    title:'Agent 想下一步',
+    sub:'同一个 act(观测) 接口：scripted 按剧本走，react 让真模型吐一个 JSON 动作。',
+    tags:['agents/','act()','5 种 policy'],
+    file:'agentlab/agents/__init__.py',
+    one:'同一个 act(observation) 接口，五种消融策略 + 一种真模型循环。',
+    desc:[
+      'build_agent 是工厂。scripted 直接把 task 的 solution 当剧本重放，policy 决定「遇到错误怎么办」：oracle 照抄、fragile 立刻放弃、retry 重试同一条、silent 跳过提问硬猜、early_stop 提前交卷 —— 这五个就是消融实验的对照组。',
+      'react 才是真正的 LLM 循环：把观测拼进消息，要求模型输出一个 JSON 动作块；解析失败给一次格式纠正机会，再失败才记 format_error。'
+    ],
+    io:{ in:'任务 + 模型名 / policy', out:'一串 Action（含 token 与成本统计）' },
+    code:`def build_agent(spec, task, model="mock", policy="oracle", ...):
+    if spec == "oracle":
+        return ScriptedAgent(task, policy="oracle")
+    if spec == "scripted":
+        return ScriptedAgent(task, policy=policy)
+    if spec == "react":
+        return ReActAgent(create_model(model), task)
+
+POLICIES = ("oracle", "early_stop", "fragile", "retry", "silent")`,
+    pits:[
+      '观测进 prompt 前截断到 4000 字符；历史超过 18 条会压缩成「system + 首个任务 + 最近 12 条」。',
+      'scripted 的分数只用于验证 harness 有区分度，README 里明确标注 synthetic。'
+    ],
+    rel:['reset','tools']
+  },
+  {
+    id:'tools', n:'06', phase:'p2', ac:'#34d399', x:884, y:330,
+    title:'工具落地 + 故障注入',
+    sub:'白名单校验 → 分发到 _act_* 执行；执行前按剧本删 / 改 / 拦一次。',
+    tags:['shell.py','faults.py','7 个动作'],
+    file:'agentlab/envs/shell.py · faults.py',
+    one:'step() 永不抛异常：任何错误都转成一条「失败观测」，让 agent 自己看见并修正。',
+    desc:[
+      'step() 做三件事：先查白名单（动作必须在任务的 tools 里），再用 getattr 找到 _act_<kind> 处理器，最后把任何异常统一转成失败观测。',
+      'FaultInjector 在每一步执行前应用扰动：删文件、改坏文件、追加内容、按正则批量删、拦命令。announce=true 的会在观测里明说「环境变了」；drift 类完全静默，只有主动重读文件的 agent 才能发现。'
+    ],
+    io:{ in:'Action + 当前步号', out:'Observation + info + FaultEvent 列表' },
+    code:`allowed = (action.kind in ("finish", "give_up")
+           or action.kind in spec.tool_names)
+handler = getattr(self, f"_act_{action.kind}", None)
+
+_act_shell / _act_read_file / _act_write_file / _act_list_dir
+_act_ask_user / _act_tool / _act_finish
+
+# 拦命令：每个 fault 只命中一次 -> 重试即恢复
+if re.search(fault.match, command):
+    self._consumed.add(idx)
+    return fault`,
+    pits:[
+      'block_command 只命中一次，所以「重试同一条命令」就是最干净的恢复信号，RRS 才测得准。',
+      '只有 shell / tool 类动作计入 n_tool_calls，读文件不烧预算。'
+    ],
+    rel:['agent','grade']
+  },
+  {
+    id:'grade', n:'07', phase:'p2', ac:'#fbbf24', x:464, y:330,
+    title:'只看终态判分',
+    sub:'12 种确定性检查项加权求和，required 挂一项就否决，完全不看 agent 的自述。',
+    tags:['grader.py','checks.py','Verdict'],
+    file:'agentlab/verifiers/grader.py',
+    one:'判定输入只有四样：workspace 终态、前后快照、工具日志、动作序列。',
+    desc:[
+      'grade() 本身不做断言，只负责聚合：逐个跑 verifier.checks 里的检查项，按 weight 加权求和；任何 required 项挂掉直接否决；分数还得 ≥ pass_threshold。',
+      '关键在结构上：CheckContext 里根本没有 solution 字段，所以「照着答案判分」在类型层面就不可能发生。agent 说「我做完了」也不加任何分。'
+    ],
+    io:{ in:'workspace + 快照 + tool_log + actions', out:'Verdict（success, score, checks[]）' },
+    code:`results = [run_check(c, ctx) for c in task.spec.verifier.checks]
+total   = sum(r.weight for r in results) or 1.0
+score   = sum(r.weight for r in results if r.passed) / total
+
+required_ok = all(r.passed for r in results if r.required)
+success = (required_ok
+           and score >= task.spec.verifier.pass_threshold)`,
+    pits:[
+      'score 和 success 是两个维度：score=0.9 但 required 挂了一项，依然是 failure。',
+      '循环结束后无条件判分 —— 超时 / 超预算的样本也保留「做到哪一步」的信号。'
+    ],
+    rel:['tools','taxo','metrics']
+  },
+  {
+    id:'taxo', n:'08', phase:'p2', ac:'#34d399', x:44, y:330,
+    title:'失败打个标签',
+    sub:'9 类固定优先级：异常 > 放弃 > 超预算 > 超时 > 死循环 > 没动手 > 未恢复。',
+    tags:['taxonomy.py','classify()','9 类'],
+    file:'agentlab/core/taxonomy.py',
+    one:'一眼看出这一集死在哪一环，而不是只看到一个 False。',
+    desc:[
+      'classify() 按固定优先级判定：异常 > 主动放弃 > 超预算 > 超时 > 死循环 > 没动手 > 故障未恢复 > 输出错 > 不完整。',
+      '「死循环」的判定很朴素：同一个动作（kind + args 完全相同）连续出现 3 次。纯规则、不依赖模型，所以归因结果同样可复现。'
+    ],
+    io:{ in:'一个 Episode', out:'唯一标签，用于报告与错误分析' },
+    code:`TAXONOMY_ORDER = ("error", "gave_up", "budget",
+                  "timeout", "loop", "no_attempt",
+                  "fault_unrecovered", "wrong_output",
+                  "incomplete", "none")`,
+    pits:[
+      '单标签：一个 episode 只记优先级最高的那个原因，不叠标签。',
+      '成功的 episode 归因为 none，不参与失败分布统计。'
+    ],
+    rel:['grade','metrics']
+  },
+  {
+    id:'metrics', n:'09', phase:'p3', ac:'#a78bfa', x:44, y:608,
+    title:'算总账',
+    sub:'SR 配 Wilson 区间、RRS 看故障恢复、ES 比 oracle 调用数、CQ 看澄清质量。',
+    tags:['metrics.py','REBOUND','pass@k'],
+    file:'agentlab/core/metrics.py',
+    one:'把一堆 episode 变成能写进报告、也能离线复算的数字。',
+    desc:[
+      'aggregate() 按 overall / suite / difficulty / agent / task 五个维度切片，每片都算成功率、Wilson 区间、平均调用数、效率分、成本。',
+      'SR 配区间是因为样本小：18 个任务 × 1~2 次采样，单看百分比会骗人。ES 拿实际调用数和 oracle 调用数比；pass@k 用 1 − C(n−c,k)/C(n,k) 的无偏估计。'
+    ],
+    io:{ in:'Episode 列表', out:'summary dict（报告与图表的数据源）' },
+    code:`summary = aggregate(episodes)                  # 五个维度切片
+score = 0.40*sr + 0.25*rrs + 0.20*es + 0.15*cq   # REBOUND
+
+def efficiency_score(success, used, oracle, cap):
+    if not success: return 0.0
+    over = max(0, used - oracle)
+    span = max(oracle + 1, cap) - oracle
+    return clip(1 - over / span, 0, 1)`,
+    pits:[
+      'REBOUND 权重集中在一个常量里，改公式必须同步设计文档，否则报告和设计会对不上。',
+      '聚合只依赖 Episode、不重跑环境，所以能拿历史 jsonl 离线复算。'
+    ],
+    rel:['taxo','report']
+  },
+  {
+    id:'report', n:'10', phase:'p3', ac:'#a78bfa', x:464, y:608,
+    title:'落盘 + 出报告',
+    sub:'results.jsonl 一行一集、episodes/ 全轨迹可回放、report.md 加三张图。',
+    tags:['report.py','trajectory.py','charts'],
+    file:'agentlab/eval/report.py',
+    one:'三份机读产物 + 一份人读报告，全部由数据自动生成，不手写结论。',
+    desc:[
+      'ResultWriter 每跑完一集就追加一行 results.jsonl（摘要），同时把完整轨迹写到 episodes/<task>__s<i>.json —— 每一步的 action / observation / info 都在，可以离线回放。',
+      '跑完自动调 write_report 生成 report.md、summary.json 和 charts/*.png；报告里有分 suite / 难度 / 任务的表格、逐任务失败检查、失败归因分布。'
+    ],
+    io:{ in:'Episode + summary', out:'results.jsonl / episodes/*.json / report.md / charts' },
+    code:`writer.write(episode)   # results.jsonl 追加一行摘要
+                         # episodes/<task>__s<i>.json 完整轨迹
+
+write_report(run_dir)    # summary.json / report.md / charts
+                         # 表格按 suite / 难度 / 任务切片`,
+    pits:[
+      '报告标注 synthetic：脚本或 mock 的分数只证明 harness 有区分度，不是模型能力排名。',
+      '--drop-workspaces 可以在跑完后删掉工作区，只保留轨迹，适合长期存档。'
+    ],
+    rel:['metrics','selfcheck']
+  },
+  {
+    id:'selfcheck', n:'11', phase:'p3', ac:'#a78bfa', x:884, y:608,
+    title:'先证明评分是准的',
+    sub:'oracle 必须 100%，指纹保证「改了任务不能复用旧分」，doctor 自检环境。',
+    tags:['validate','fingerprint','doctor'],
+    file:'agentlab/core/spec.py · eval/validate.py',
+    one:'在相信任何一个数字之前，先证明评测本身是准的。',
+    desc:[
+      'validate 用 oracle 剧本把每个任务跑一遍：oracle 必须 100% 通过，否则说明任务写错或判分写错，后面所有分数都不可信。这是这套 harness 唯一的硬性流程要求。',
+      'fingerprint() 把整个 spec 序列化成 JSON 再 sha256 取前 16 位，写进 run_meta。两次运行指纹不同，就说明任务定义变了，分数不能直接对比。'
+    ],
+    io:{ in:'TaskSpec + 一次真跑', out:'校验报告 / 16 位指纹 / doctor 环境自检' },
+    code:`payload = json.dumps(self.model_dump(mode="json"),
+                     sort_keys=True, ensure_ascii=False)
+return hashlib.sha256(payload.encode()).hexdigest()[:16]
+
+$ python -m agentlab validate --suite rebound   # oracle 必须全绿
+$ python -m agentlab doctor                     # 模型 / 目录 / 依赖`,
+    pits:[
+      '指纹覆盖 spec 全部字段（包括 prompt 与 solution），改一个字都会变。',
+      '写完任务先跑 validate，然后再谈模型之间的差异。'
+    ],
+    rel:['report','paths']
+  },
+  {
+    id:'rl', n:'12', phase:'p3', ac:'#f472b6', x:1304, y:608,
+    title:'换个接口去训练',
+    sub:'同一套 ShellEnv + grade 包成 Gym，三种 reward 直接产出 rollouts.jsonl。',
+    tags:['rl/env.py','shaped reward','rollouts'],
+    file:'agentlab/rl/env.py',
+    one:'评测与训练共用同一个环境与判分器，reward 口径不会漂移。',
+    desc:[
+      'AgentEnv 把 ShellEnv + grade 包成经典 Gym 接口：reset() 返回观测文本，step() 返回 (obs, reward, terminated, truncated, info)。task.yaml 一个字都不用改。',
+      'reward 有三种口径：terminal（终局按分数给）、binary（0 / 1）、shaped（每步只补发「新增进度」，并跳过 shell 类检查，避免每步执行任意命令）。rollout() 把一整集写成一条 JSONL。'
+    ],
+    io:{ in:'同一批任务（任务包零改动）', out:'rollouts.jsonl + summary.json（按 policy 统计）' },
+    code:`class AgentEnv:                        # Gym 风格
+    def reset(self) -> str
+    def step(action) -> (obs, reward, done, trunc, info)
+
+terminal : reward = verdict.score + success_bonus - step_cost
+binary   : reward = (1.0 if success else 0.0) - step_cost
+shaped   : reward = (target - prev) - step_cost   # 只补增量
+
+record = env.rollout(ScriptedAgent(task, policy="retry"))`,
+    pits:[
+      'shaped 只补发增量（target − prev_partial），避免和上一步奖励重复计算。',
+      'step_cost 能制造「效率 vs 成功率」的权衡，也方便做 reward hacking 实验。',
+      '训练 / 测试要按 task 切分，否则同一任务的轨迹会泄漏到测试集。'
+    ],
+    rel:['grade','metrics']
+  }
+];
+
+const W = 1728, H = 900, NW = 380, NH = 200;
+
+/* 位置：三行蛇形（偶数行左→右，中间行右→左） */
+const COLS = [44, 464, 884, 1304];
+const ROWS = [52, 324, 596];
+const SEQ  = ['cli','registry','paths','reset', 'agent','tools','grade','taxo', 'metrics','report','selfcheck','rl'];
+NODES.forEach(n => {
+  const i = SEQ.indexOf(n.id);
+  const row = Math.floor(i / 4), c = i % 4;
+  n.x = COLS[row === 1 ? 3 - c : c];
+  n.y = ROWS[row];
+});
+
+/* ============================================================
+   播放脚本（一个真实 episode 的完整生命周期）
+   ============================================================ */
+const PLAY = [
+  { id:'cli', say:'你在终端敲下一条命令：跑 rebound 套件，用 oracle 脚本策略，采样 1 次。',
+    trace:[['cmd','$ python -m agentlab run --suite rebound --agent scripted --policy oracle']] },
+  { id:'registry', say:'Registry 扫到 18 个任务包，逐个 Pydantic 校验 —— 全部合法，才允许开跑。',
+    trace:[['dim','[registry] 扫描 suites/*/*/task.yaml'],['ok','[registry] 18 tasks / 4 suites / 0 errors']] },
+  { id:'paths', say:'算 run_id、建结果目录、写 run_meta（含每个任务的指纹），再把任务展开成作业丢进线程池。',
+    trace:[['dim','[run] experiments/results/20261027-2136__scripted-oracle__mock'],['dim','[meta] run_meta.json · 18 个任务指纹已记录'],['dim','[jobs] 18 episodes → workers=4']] },
+  { id:'reset', say:'每个 episode 拿到一个干净目录，写入初始文件，并拍一张 sha256 快照作为改动基线。',
+    trace:[['dim','[env] workspace = workspaces/rb-fault-retry__s0'],['ok','[env] 初始文件 1 个 · snapshot_before 已记录']] },
+  { id:'agent', say:'进循环。第 0 步 agent 先观察：读 data/orders.csv。',
+    trace:[['dim','[step 0] action = read_file data/orders.csv'],['ok','[step 0] observation 45 bytes']] },
+  { id:'tools', say:'第 1 步执行前，环境按剧本注入故障：匹配 /python/ 的命令会被拦一次。',
+    trace:[['warn','[fault] block_command  match=/python/  at_step=1  announce=true'],['err','[step 1] shell python -c ... → exit_code=1  (injected)'],['err','        stderr: 包索引瞬时不可用，请重试当前命令']] },
+  { id:'grade', say:'agent 重试同一条命令（fault 只命中一次），产出 out/summary.json，然后判分。',
+    trace:[['dim','[step 2] action = shell (retry) → exit_code=0'],['dim','[grade] 2 checks → summary_exists ✓  summary_values ✓'],['ok','[verdict] success=True  score=1.000']] },
+  { id:'taxo', say:'成功的 episode 归因为 none；只有失败的才会被打上 9 类标签之一。',
+    trace:[['dim','[taxonomy] none（success）']] },
+  { id:'metrics', say:'所有 episode 汇总：成功率、区间、效率分、恢复率，按维度切片。',
+    trace:[['dim','[metrics] SR=1.00  ES=1.00  RRS=1.00  CQ=—'],['ok','[rebound] 综合分 1.000']] },
+  { id:'report', say:'边跑边落盘：一行摘要进 jsonl，完整轨迹进 episodes/，最后渲染人读报告。',
+    trace:[['ok','[write] results.jsonl +1'],['ok','[write] episodes/rb-fault-retry__s0.json'],['ok','[report] report.md · summary.json · charts/*.png']] },
+  { id:'selfcheck', say:'收工前复核：oracle 全绿、任务指纹与 run_meta 一致 —— 这批分数才敢拿去比较。',
+    trace:[['ok','[validate] oracle 18/18 passed'],['dim','[fp] 3f9c1a77b0e2d4c8 · 与 run_meta 一致']] },
+  { id:'rl', say:'同一套环境换个封装：Gym 接口 + shaped reward，把 episode 变成可训练的数据。',
+    trace:[['dim','[rl] reward_mode=shaped  step_cost=0.01'],['ok','[rl] rollouts.jsonl · 可训练']] }
+];
+
+/* ============================================================
+   渲染
+   ============================================================ */
+const SVGNS = 'http://www.w3.org/2000/svg';
+const canvas  = document.getElementById('canvas');
+const svg     = document.getElementById('edges');
+const nodesEl = document.getElementById('nodes');
+const decoEl  = document.getElementById('deco');
+const viewport= document.getElementById('viewport');
+const drawer  = document.getElementById('drawer');
+const cBody   = document.getElementById('cBody');
+const consoleEl = document.getElementById('console');
+
+canvas.style.width = W + 'px';
+canvas.style.height = H + 'px';
+svg.setAttribute('width', W);
+svg.setAttribute('height', H);
+svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+const byId = id => NODES.find(n => n.id === id);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function svgEl(tag, attrs) {
+  const e = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+}
+
+/* ---- 箭头 marker ---- */
+const defs = svgEl('defs', {});
+svg.appendChild(defs);
+function marker(color, id) {
+  const m = svgEl('marker', { id, viewBox:'0 0 8 8', refX:'6.6', refY:'4',
+    markerWidth:'7', markerHeight:'7', orient:'auto-start-reverse' });
+  m.appendChild(svgEl('path', { d:'M0,0 L7,4 L0,8 z', fill: color }));
+  defs.appendChild(m);
+  return `url(#${id})`;
+}
+const ARROW = marker('rgba(160,190,230,.62)', 'ar-base');
+const ARROW_W = marker('rgba(120,215,255,.85)', 'ar-warm');
+
+/* ---- 圆角折线 ---- */
+function roundPath(pts, r) {
+  const f = v => Math.round(v * 10) / 10;
+  let d = `M${f(pts[0][0])},${f(pts[0][1])}`;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const p0 = pts[i-1], p1 = pts[i], p2 = pts[i+1];
+    const v1 = [p1[0]-p0[0], p1[1]-p0[1]], v2 = [p2[0]-p1[0], p2[1]-p1[1]];
+    const l1 = Math.hypot(v1[0], v1[1]) || 1, l2 = Math.hypot(v2[0], v2[1]) || 1;
+    const rr = Math.min(r, l1 / 2, l2 / 2);
+    const a = [p1[0] - v1[0]/l1*rr, p1[1] - v1[1]/l1*rr];
+    const b = [p1[0] + v2[0]/l2*rr, p1[1] + v2[1]/l2*rr];
+    d += `L${f(a[0])},${f(a[1])}Q${f(p1[0])},${f(p1[1])} ${f(b[0])},${f(b[1])}`;
+  }
+  const last = pts[pts.length-1];
+  d += `L${f(last[0])},${f(last[1])}`;
+  return d;
+}
+
+function label(x, y, text, anchor, cls) {
+  const t = svgEl('text', { x, y, class: 'elabel' + (cls ? ' ' + cls : ''), 'text-anchor': anchor || 'middle' });
+  t.textContent = text;
+  svg.appendChild(t);
+  return t;
+}
+
+/* ---- 主流程连线 ---- */
+function drawMain() {
+  for (let i = 0; i < SEQ.length - 1; i++) {
+    const a = byId(SEQ[i]), b = byId(SEQ[i+1]);
+    const sameRow = Math.abs(a.y - b.y) < 1;
+    let pts, lx, ly, txt;
+
+    if (sameRow) {
+      const rightward = b.x > a.x;
+      const cy = a.y + NH / 2;
+      pts = rightward ? [[a.x + NW, cy], [b.x, cy]] : [[a.x, cy], [b.x + NW, cy]];
+      txt = '';
+    } else if (a.id === 'taxo') {
+      // 08 → 09：走左侧外沿，避开这一行的说明文字
+      const y0 = a.y + NH / 2, y1 = b.y + NH / 2;
+      pts = [[a.x, y0], [16, y0], [16, y1], [b.x, y1]];
+      txt = '';
+    } else {
+      const cx = a.x + NW / 2;
+      pts = [[cx, a.y + NH], [cx, b.y]];
+      lx = cx + 11;
+      ly = b.y - 11;
+      txt = '↓ 一个 episode 开始';
+    }
+    const p = svgEl('path', { d: roundPath(pts, 10), class:'edge', 'marker-end': ARROW });
+    p.dataset.from = a.id; p.dataset.to = b.id;
+    svg.appendChild(p);
+    if (txt) label(lx, ly, txt, 'start');
+  }
+}
+
+/* ---- 05 / 06 的循环回边：执行完拿到新观测，回头再决策 ---- */
+function drawLoopBack() {
+  const a = byId('agent'), b = byId('tools');   // 05 在右，06 在左
+  const cxA = a.x + NW / 2, cxB = b.x + NW / 2, y0 = a.y + NH, y1 = y0 + 20;
+  const pts = [[cxB, y0], [cxB, y1], [cxA, y1], [cxA, y0]];
+  svg.appendChild(svgEl('path', { d: roundPath(pts, 12), class:'edge dash', 'marker-end': ARROW_W }));
+  label(cxA, y1 + 18, '同一 episode 内循环：执行完 → 新观测回到 Agent，直到 finish / 预算耗尽', 'end');
+}
+
+/* ---- 底部回环 ---- */
+function drawLoopback() {
+  const a = byId('rl');
+  const x = a.x + NW / 2, y0 = a.y + NH, y1 = 848;
+  const pts = [[x, y0], [x, y1], [110, y1]];
+  svg.appendChild(svgEl('path', { d: roundPath(pts, 14), class:'edge dash', 'marker-end': ARROW }));
+  label(96, y1 - 9, '一轮 run 结束 —— 换 policy / 调预算 / 改任务后重跑；指纹变了，分数不能直接比', 'start');
+}
+
+/* ---- 行说明 ---- */
+function drawRows() {
+  ROWCAPS.forEach(r => {
+    const c = PHASES[r.phase].c;
+    const d = document.createElement('div');
+    d.className = 'rowcap';
+    d.style.top = r.y + 'px';
+    d.style.setProperty('--pc', c);
+    d.innerHTML = `<span class="p">${r.k}</span><span class="d">${esc(r.d)}</span>`;
+    decoEl.appendChild(d);
+  });
+
+  const foot = document.createElement('div');
+  foot.className = 'foot';
+  foot.style.left = '44px';
+  foot.style.top = '872px';
+  foot.innerHTML = '<span>— 主流程</span><span>┄ 回环 / 旁路</span><span>点击卡片看通俗解释与代码</span>';
+  decoEl.appendChild(foot);
+}
+
+/* ---- 节点 ---- */
+function renderNodes() {
+  NODES.forEach(n => {
+    const el = document.createElement('div');
+    el.className = 'node';
+    el.dataset.id = n.id;
+    el.style.cssText = `left:${n.x}px;top:${n.y}px;width:${NW}px;height:${NH}px;--ac:${n.ac}`;
+    el.innerHTML = `
+      <div class="ring"></div>
+      <div class="nhead">
+        <span class="num mono">${n.n}</span>
+        <span class="nphase mono">${PHASES[n.phase].name}</span>
+      </div>
+      <div class="ntitle">${esc(n.title)}</div>
+      <div class="nsub">${esc(n.sub)}</div>
+      <div class="nfoot">${n.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>
+      <div class="ghost mono">${n.n}</div>`;
+    el.addEventListener('click', () => openNode(n.id));
+    nodesEl.appendChild(el);
+  });
+}
+
+/* ============================================================
+   抽屉
+   ============================================================ */
+let selected = null;
+
+function openNode(id) {
+  const n = byId(id);
+  if (!n) return;
+  if (playing) stopPlay();
+  selected = id;
+
+  document.querySelectorAll('.node').forEach(el => el.classList.toggle('sel', el.dataset.id === id));
+
+  drawer.style.setProperty('--ac', n.ac);
+  document.getElementById('dNum').textContent = n.n;
+  document.getElementById('dNum').style.cssText =
+    `color:${n.ac};background:color-mix(in srgb,${n.ac} 12%,transparent);border:1px solid color-mix(in srgb,${n.ac} 32%,transparent)`;
+  document.getElementById('dFile').textContent = n.file;
+  document.getElementById('dTitle').textContent = n.title;
+
+  const rel = (n.rel || []).map(r => {
+    const t = byId(r);
+    return t ? `<button data-go="${t.id}">${t.n} ${esc(t.title)}</button>` : '';
+  }).join('');
+
+  document.getElementById('dBody').innerHTML = `
+    <div class="sec">
+      <div class="one" style="border-color:${n.ac}">${esc(n.one)}</div>
+    </div>
+    <div class="sec">
+      <div class="sec-h">它在做什么</div>
+      ${n.desc.map(p => `<p>${esc(p)}</p>`).join('')}
+    </div>
+    <div class="sec">
+      <div class="sec-h">输入 / 输出</div>
+      <div class="io">
+        <div class="row"><span class="k mono">IN</span><span class="v">${esc(n.io.in)}</span></div>
+        <div class="row"><span class="k mono">OUT</span><span class="v">${esc(n.io.out)}</span></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-h">关键代码（简化）</div>
+      <pre class="code" style="border-left-color:${n.ac}">${esc(n.code)}</pre>
+    </div>
+    <div class="sec">
+      <div class="sec-h">坑与设计取舍</div>
+      <ul class="pits">${n.pits.map(p => `<li>${esc(p)}</li>`).join('')}</ul>
+    </div>
+    <div class="sec">
+      <div class="sec-h">相关模块</div>
+      <div class="rel">${rel}</div>
+    </div>`;
+
+  document.getElementById('dBody').querySelectorAll('[data-go]').forEach(b => {
+    b.addEventListener('click', () => { openNode(b.dataset.go); focusNode(b.dataset.go); });
+  });
+
+  drawer.classList.add('open');
+  focusNode(id, true);
+  try { history.replaceState(null, '', '#' + id); } catch (e) {}
+}
+
+function closeDrawer() {
+  drawer.classList.remove('open');
+  selected = null;
+  document.querySelectorAll('.node').forEach(el => el.classList.remove('sel'));
+  try { history.replaceState(null, '', location.pathname); } catch (e) {}
+  if (!playing) fit();
+}
+document.getElementById('dClose').addEventListener('click', closeDrawer);
+
+/* ============================================================
+   视图：缩放 / 平移
+   ============================================================ */
+let k = 1, tx = 0, ty = 0;
+
+function apply() {
+  canvas.style.transform = `translate(${tx}px,${ty}px) scale(${k})`;
+  document.getElementById('zoomVal').textContent = Math.round(k * 100) + '%';
+}
+
+function fit() {
+  const vw = viewport.clientWidth, vh = viewport.clientHeight;
+  k = Math.min((vw - 48) / W, (vh - 48) / H, 1.08);
+  tx = (vw - W * k) / 2;
+  ty = (vh - H * k) / 2 + 6;
+  apply();
+}
+
+function focusNode(id, soft) {
+  const n = byId(id);
+  if (!n) return;
+  const vw = viewport.clientWidth - (drawer.classList.contains('open') ? 486 : 0);
+  const vh = viewport.clientHeight - (consoleEl.classList.contains('collapsed') ? 0 : 150);
+  const targetK = Math.min(1.0, Math.max(0.82, Math.min((vw - 90) / NW, (vh - 190) / NH)));
+  k = targetK;
+  tx = vw / 2 - (n.x + NW / 2) * k;
+  ty = vh / 2 - (n.y + NH / 2) * k + 26;
+  apply();
+}
+
+/* 拖拽 */
+let drag = null;
+viewport.addEventListener('pointerdown', e => {
+  if (e.target.closest('.node')) return;
+  drag = { x:e.clientX, y:e.clientY, tx, ty };
+  viewport.classList.add('dragging');
+});
+window.addEventListener('pointermove', e => {
+  if (!drag) return;
+  tx = drag.tx + (e.clientX - drag.x);
+  ty = drag.ty + (e.clientY - drag.y);
+  apply();
+});
+window.addEventListener('pointerup', () => { drag = null; viewport.classList.remove('dragging'); });
+
+/* 滚轮缩放 */
+viewport.addEventListener('wheel', e => {
+  e.preventDefault();
+  const r = viewport.getBoundingClientRect();
+  const mx = e.clientX - r.left, my = e.clientY - r.top;
+  const nk = Math.min(1.6, Math.max(0.28, k * (e.deltaY < 0 ? 1.08 : 0.926)));
+  tx = mx - (mx - tx) * (nk / k);
+  ty = my - (my - ty) * (nk / k);
+  k = nk;
+  apply();
+}, { passive:false });
+
+window.addEventListener('resize', () => {
+  if (selected) focusNode(selected);
+  else fit();
+});
+
+/* ============================================================
+   阶段筛选
+   ============================================================ */
+function buildLegend() {
+  const box = document.getElementById('legend');
+  Object.keys(PHASES).forEach(p => {
+    const c = PHASES[p].c;
+    const b = document.createElement('button');
+    b.className = 'chip';
+    b.dataset.p = p;
+    b.style.setProperty('--c', c);
+    b.innerHTML = `<i></i>${PHASES[p].name}<span class="n"> · ${NODES.filter(n => n.phase === p).length}</span>`;
+    b.addEventListener('click', () => {
+      const on = b.classList.toggle('on');
+      box.querySelectorAll('.chip').forEach(x => { if (x !== b) x.classList.remove('on'); });
+      const active = on ? p : null;
+      document.querySelectorAll('.node').forEach(el => {
+        const nd = byId(el.dataset.id);
+        el.classList.toggle('dim', active !== null && nd.phase !== active);
+      });
+      document.querySelectorAll('.rowcap').forEach(el => el.style.opacity = 1);
+    });
+    box.appendChild(b);
+  });
+}
+
+/* ============================================================
+   播放
+   ============================================================ */
+let playIdx = -1, playing = false, timer = null;
+
+function addTrace(list) {
+  consoleEl.classList.remove('collapsed');
+  document.getElementById('cToggle').textContent = '收起';
+  list.forEach(([cls, text]) => {
+    const d = document.createElement('div');
+    d.className = 'ln ' + cls;
+    d.textContent = text;
+    cBody.appendChild(d);
+  });
+  cBody.scrollTop = cBody.scrollHeight;
+}
+
+function setStepText() {
+  document.getElementById('prog').textContent =
+    playIdx >= 0 ? `STEP ${String(playIdx + 1).padStart(2, '0')} / 12` : '';
+}
+
+function gotoStep(i) {
+  document.querySelectorAll('.node').forEach(el => el.classList.remove('active'));
+  const s = PLAY[i];
+  const el = document.querySelector(`.node[data-id="${s.id}"]`);
+  if (el) el.classList.add('active');
+  focusNode(s.id);
+  addTrace([['say', `› ${s.say}`]].concat(s.trace));
+  playIdx = i;
+  setStepText();
+}
+
+function startPlay() {
+  clearInterval(timer);
+  document.querySelectorAll('.node').forEach(el => el.classList.remove('active'));
+  cBody.innerHTML = '';
+  consoleEl.classList.remove('collapsed');
+  document.getElementById('cToggle').textContent = '收起';
+  playIdx = -1;
+  gotoStep(0);
+  playing = true;
+  document.getElementById('playBtn').textContent = '❚❚ 暂停';
+  timer = setInterval(() => {
+    if (playIdx + 1 >= PLAY.length) { stopPlay(); return; }
+    gotoStep(playIdx + 1);
+    if (playIdx === PLAY.length - 1) stopPlay();
+  }, 2300);
+}
+
+function stopPlay() {
+  clearInterval(timer);
+  playing = false;
+  document.getElementById('playBtn').textContent = '▶ 播放一集';
+}
+
+document.getElementById('playBtn').addEventListener('click', () => {
+  if (playing) stopPlay(); else startPlay();
+});
+document.getElementById('fitBtn').addEventListener('click', () => { closeDrawer(); fit(); });
+document.getElementById('cToggle').addEventListener('click', () => {
+  const c = consoleEl.classList.toggle('collapsed');
+  document.getElementById('cToggle').textContent = c ? '展开' : '收起';
+});
+document.getElementById('cClear').addEventListener('click', () => {
+  cBody.innerHTML = '<div class="ln dim">// 已清空</div>';
+});
+
+/* 键盘 */
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeDrawer(); return; }
+  if (drawer.classList.contains('open')) return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft' || e.key === ' ') {
+    e.preventDefault();
+    if (e.key === ' ') { playing ? stopPlay() : startPlay(); return; }
+    if (playing) stopPlay();
+    const delta = e.key === 'ArrowRight' ? 1 : -1;
+    const next = Math.min(PLAY.length - 1, Math.max(0, (playIdx < 0 ? 0 : playIdx) + delta));
+    gotoStep(next);
+  }
+});
+
+/* ============================================================
+   启动
+   ============================================================ */
+drawMain();
+drawLoopBack();
+drawLoopback();
+drawRows();
+renderNodes();
+buildLegend();
+fit();
+
+const hash = location.hash.replace('#', '');
+if (hash === 'play') {
+  setTimeout(startPlay, 500);
+} else if (hash && byId(hash)) {
+  openNode(hash);
+} else {
+  setTimeout(() => {
+    if (!playing && !selected) {
+      document.querySelector('.node').classList.add('sel');
+    }
+  }, 200);
+}
+</script>
+</body>
+</html>

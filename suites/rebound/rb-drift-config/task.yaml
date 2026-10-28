@@ -1,0 +1,82 @@
+id: rb-drift-config
+name: 静默漂移下的配置自愈
+category: rebound
+difficulty: medium
+tags: [rebound, drift, recovery, config]
+visibility: public
+
+prompt: |
+  workspace 里 config/app.ini 保存服务端口，backup/app.ini.bak 是它的备份。
+  请生成 out/deploy.json，内容为 {"port": <端口整数>, "host": "0.0.0.0"}。
+
+  注意：这个工作区可能被外部进程修改，文件可能在你操作期间消失或变化。
+  如果读取失败，请先确认文件是否还在，必要时从备份恢复后重试，不要假设之前看到的状态仍然有效。
+
+max_steps: 10
+timeout_s: 30
+
+workspace:
+  files:
+    config/app.ini: |
+      [server]
+      port = 9091
+    backup/app.ini.bak: |
+      [server]
+      port = 9091
+
+tools: [shell, read_file, write_file, list_dir]
+
+budget:
+  max_tool_calls: 10
+  max_tokens: 30000
+  max_wall_s: 120
+  oracle_tool_calls: 3
+
+faults:
+  - at_step: 2
+    axis: drift
+    kind: drift_delete
+    path: config/app.ini
+    announce: false
+    note: "外部进程清理了 config/app.ini（无通知）"
+
+verifier:
+  pass_threshold: 1.0
+  checks:
+    - name: deploy_exists
+      kind: file_exists
+      path: out/deploy.json
+      required: true
+    - name: deploy_content
+      kind: python
+      func: check_deploy
+      weight: 2.0
+      required: true
+    - name: config_restored
+      kind: file_exists
+      path: config/app.ini
+      weight: 0.5
+      required: false
+
+notes: |
+  drift 在第 2 个动作前静默删除 config/app.ini。oracle 的生成命令会失败，随后从
+  backup 恢复并重试；fragile 会直接放弃。用于验证 drift 轴与恢复率 RRS 的度量。
+
+solution:
+  actions:
+    - kind: list_dir
+      args: {path: .}
+    - kind: shell
+      args:
+        command: >-
+          python -c "import pathlib,shutil; pathlib.Path('config').mkdir(exist_ok=True); shutil.copy('backup/app.ini.bak','config/app.ini')"
+    - kind: shell
+      args:
+        command: >-
+          python -c "import configparser,json,pathlib; cfg=configparser.ConfigParser(); cfg.read('config/app.ini'); port=int(cfg['server']['port']); pathlib.Path('out').mkdir(exist_ok=True); json.dump({'port':port,'host':'0.0.0.0'}, open('out/deploy.json','w'))"
+    - kind: shell
+      args:
+        command: >-
+          python -c "import pathlib,shutil,configparser,json; pathlib.Path('config').mkdir(exist_ok=True); shutil.copy('backup/app.ini.bak','config/app.ini') if not pathlib.Path('config/app.ini').exists() else None; cfg=configparser.ConfigParser(); cfg.read('config/app.ini'); port=int(cfg['server']['port']); pathlib.Path('out').mkdir(exist_ok=True); json.dump({'port':port,'host':'0.0.0.0'}, open('out/deploy.json','w'))"
+    - kind: finish
+      args: {message: "已生成 out/deploy.json"}

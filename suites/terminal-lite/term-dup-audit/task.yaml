@@ -1,0 +1,108 @@
+id: term-dup-audit
+name: 重复文件审计与冗余空间统计
+category: terminal
+difficulty: hard
+tags: [shell, hashing, audit, json]
+visibility: public
+prompt: |
+  对 `store/` 做一次重复文件审计。规则如下：
+
+  1. 扫描 `store/` 下所有文件，但跳过：相对路径中任意一级目录名为 `_trash` 的文件；
+     扩展名为 `.tmp` 的文件。
+  2. 空文件（0 字节）单独统计，不计入重复组。
+  3. 按文件内容（字节）的 sha256 分组；组内文件数 >= 2 才算重复组。
+  4. 写 `audit/duplicates.json`（UTF-8、2 空格缩进、以换行结尾），顶层恰好这些键：
+     - `scanned_count`：参与扫描的文件数（包含空文件）；
+     - `empty_file_count`：空文件数；
+     - `groups`：重复组数组。每组恰好 `{"sha256": <摘要>, "size": <该组文件字节数>,
+       "paths": [<相对 store/ 的路径，用 / 分隔>]}`；`paths` 按字典序升序；
+       组之间先按 `size` 降序，`size` 相同按 `sha256` 升序；
+     - `redundant_count`：所有重复组的 Σ(组内文件数 - 1)；
+     - `wasted_bytes`：所有重复组的 Σ(size × (组内文件数 - 1))。
+  5. 不得修改 `store/` 下任何文件。
+
+  用可移植命令完成（例如 `python -c "..."`），不要联网。
+max_steps: 12
+timeout_s: 90
+workspace:
+  copy_files: true
+tools: [shell, read_file, write_file, list_dir]
+budget:
+  max_tool_calls: 12
+  max_tokens: 30000
+  max_wall_s: 240
+  oracle_tool_calls: 2
+verifier:
+  pass_threshold: 1.0
+  checks:
+    - name: duplicates_exists
+      kind: file_exists
+      path: audit/duplicates.json
+      weight: 0.5
+      required: false
+    - name: duplicates_content
+      kind: python
+      func: check_duplicates
+      weight: 3.0
+      required: true
+    - name: store_untouched
+      kind: state_unchanged
+      paths: [store/a/report.txt, store/_trash/report.txt]
+      weight: 1.0
+      required: true
+solution:
+  actions:
+    - kind: list_dir
+      args:
+        path: store
+    - kind: shell
+      args:
+        command: |
+          python -c "import hashlib, json
+          from pathlib import Path
+          root = Path('store')
+          by_digest = {}
+          scanned = 0
+          empty = 0
+          for path in sorted(root.rglob('*')):
+              if not path.is_file():
+                  continue
+              rel = path.relative_to(root)
+              if '_trash' in rel.parts or path.suffix == '.tmp':
+                  continue
+              raw = path.read_bytes()
+              scanned += 1
+              if len(raw) == 0:
+                  empty += 1
+                  continue
+              digest = hashlib.sha256(raw).hexdigest()
+              by_digest.setdefault(digest, []).append((rel.as_posix(), len(raw)))
+          groups = []
+          redundant = 0
+          wasted = 0
+          for digest, entries in by_digest.items():
+              if len(entries) < 2:
+                  continue
+              size = entries[0][1]
+              paths = sorted(item[0] for item in entries)
+              groups.append({'sha256': digest, 'size': size, 'paths': paths})
+              redundant += len(paths) - 1
+              wasted += size * (len(paths) - 1)
+          groups.sort(key=lambda group: (-group['size'], group['sha256']))
+          report = {'scanned_count': scanned, 'empty_file_count': empty, 'groups': groups, 'redundant_count': redundant, 'wasted_bytes': wasted}
+          Path('audit').mkdir(exist_ok=True)
+          Path('audit/duplicates.json').write_text(json.dumps(report, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+          print(json.dumps(report, ensure_ascii=False))"
+    - kind: shell
+      args:
+        command: |
+          python -c "import json
+          from pathlib import Path
+          report = json.loads(Path('audit/duplicates.json').read_text(encoding='utf-8'))
+          assert report['scanned_count'] == 9, report['scanned_count']
+          assert report['empty_file_count'] == 2, report['empty_file_count']
+          assert report['redundant_count'] == 3, report['redundant_count']
+          expected = sum(group['size'] * (len(group['paths']) - 1) for group in report['groups'])
+          assert report['wasted_bytes'] == expected, (report['wasted_bytes'], expected)
+          print('verified groups:', len(report['groups']))"
+

@@ -1,0 +1,113 @@
+id: term-csv-clean
+name: 客户 CSV 清洗与去重
+category: terminal
+difficulty: easy
+tags: [shell, csv, data-cleaning]
+visibility: public
+prompt: |
+  数据组导出了一份客户表 `data/raw.csv`（UTF-8、逗号分隔，表头为
+  `id,name,email,updated_at,status`），里面有重复、格式不统一和脏数据。请清洗后写到
+  `out/clean.csv`：
+
+  1. 字段清洗：`id`/`email`/`updated_at`/`status` 去掉首尾空白；`email` 全部转小写；
+     `name` 去掉首尾空白并把内部连续空白合并成一个空格（名字允许为空，保留空串）。
+  2. 丢弃规则（满足任意一条整行丢弃）：`id` 为空；`email` 为空；`updated_at` 无法解析；
+     `status` 转小写后不是 `active` 也不是 `inactive`。
+  3. `updated_at` 允许三种写法：`YYYY-MM-DD`、`YYYY-MM-DD HH:MM:SS`、`YYYY/MM/DD`；
+     统一输出为 `YYYY-MM-DD`（只保留日期部分）。
+  4. 同一个 `id` 可能多行：只保留 `updated_at` 日期最大的一行；日期相同时保留原文件中
+     **先出现**的那一行。
+  5. 输出要求：表头恰为 `id,name,email,updated_at,status`；数据行按 `id` 的**字符串升序**
+     （字典序，不是数字序）排列；逗号分隔、LF 换行（不能出现 CR）、UTF-8 不带 BOM；
+     `name` 含逗号时按 CSV 规则加双引号；文件以单个换行结尾。
+  6. `data/raw.csv` 不得修改。
+
+  请用可移植命令完成（例如 `python -c "..."`），不要用 grep/sed/awk，不要联网。
+max_steps: 10
+timeout_s: 60
+workspace:
+  copy_files: true
+tools: [shell, read_file, write_file, list_dir]
+budget:
+  max_tool_calls: 10
+  max_tokens: 30000
+  max_wall_s: 240
+  oracle_tool_calls: 2
+verifier:
+  pass_threshold: 1.0
+  checks:
+    - name: clean_csv_exists
+      kind: file_exists
+      path: out/clean.csv
+      weight: 0.5
+      required: false
+    - name: clean_csv_content
+      kind: python
+      func: check_clean_csv
+      weight: 3.0
+      required: true
+    - name: raw_untouched
+      kind: state_unchanged
+      paths: [data/raw.csv]
+      weight: 1.0
+      required: true
+solution:
+  actions:
+    - kind: read_file
+      args:
+        path: data/raw.csv
+    - kind: shell
+      args:
+        command: |
+          python -c "import csv
+          from pathlib import Path
+
+          def normalize_date(raw):
+              text = (raw or '').strip()
+              if len(text) < 10:
+                  return None
+              head = text[:10]
+              parts = head.split('-')
+              if len(parts) == 3 and all(part.isdigit() for part in parts):
+                  return head
+              parts = head.split('/')
+              if len(parts) == 3 and all(part.isdigit() for part in parts):
+                  return parts[0] + '-' + parts[1] + '-' + parts[2]
+              return None
+
+          def normalize_name(raw):
+              return ' '.join((raw or '').split())
+
+          best = {}
+          with Path('data/raw.csv').open(encoding='utf-8', newline='') as handle:
+              for row in csv.DictReader(handle):
+                  row_id = (row.get('id') or '').strip()
+                  email = (row.get('email') or '').strip().lower()
+                  if row_id == '' or email == '':
+                      continue
+                  day = normalize_date(row.get('updated_at'))
+                  if day is None:
+                      continue
+                  status = (row.get('status') or '').strip().lower()
+                  if status not in ('active', 'inactive'):
+                      continue
+                  previous = best.get(row_id)
+                  if previous is None or day > previous['updated_at']:
+                      best[row_id] = {'id': row_id, 'name': normalize_name(row.get('name')), 'email': email, 'updated_at': day, 'status': status}
+          out = Path('out/clean.csv')
+          out.parent.mkdir(parents=True, exist_ok=True)
+          with out.open('w', encoding='utf-8', newline='') as handle:
+              writer = csv.DictWriter(handle, fieldnames=['id', 'name', 'email', 'updated_at', 'status'], lineterminator='\n')
+              writer.writeheader()
+              for row_id in sorted(best):
+                  writer.writerow(best[row_id])
+          print('rows', len(best))"
+    - kind: shell
+      args:
+        command: |
+          python -c "import csv
+          rows = list(csv.reader(open('out/clean.csv', encoding='utf-8', newline='')))
+          assert len(rows) == 8, len(rows)
+          assert rows[1][0] == 'u10', rows[1]
+          print('verified data rows:', len(rows) - 1)"
+

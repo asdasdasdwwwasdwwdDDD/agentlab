@@ -1,0 +1,73 @@
+id: rb-fault-retry
+name: 瞬时故障下的重试与数据汇总
+category: rebound
+difficulty: easy
+tags: [rebound, fault, retry, csv]
+visibility: public
+
+prompt: |
+  workspace 里有 data/orders.csv（表头 order_id,amount）。请生成 out/summary.json，内容为：
+  {"rows": <数据行数，不含表头>, "total": <amount 之和，保留 2 位小数>}
+
+  要求用 Python 完成，输出 JSON（UTF-8）。
+  注意：环境里可能发生瞬时故障。命令失败时请阅读 stderr，确认原因后重试，而不是直接放弃。
+
+max_steps: 8
+timeout_s: 30
+
+workspace:
+  files:
+    data/orders.csv: |
+      order_id,amount
+      A001,19.99
+      A002,5.01
+      A003,30.00
+
+tools: [shell, read_file, list_dir, write_file]
+
+budget:
+  max_tool_calls: 8
+  max_tokens: 20000
+  max_wall_s: 120
+  oracle_tool_calls: 2
+
+faults:
+  - at_step: 1
+    axis: fault
+    kind: block_command
+    match: "python"
+    announce: true
+    note: "包索引瞬时不可用，请重试当前命令"
+
+verifier:
+  pass_threshold: 1.0
+  checks:
+    - name: summary_exists
+      kind: file_exists
+      path: out/summary.json
+      weight: 1.0
+      required: true
+    - name: summary_values
+      kind: python
+      func: check_summary
+      weight: 2.0
+      required: true
+
+notes: |
+  fault 只在第 1 步（0-based 动作序号）之后的命令上触发一次：oracle 的第二次 python
+  调用通过，fragile（遇错放弃）与 early_stop 会失败。用于验证故障重试路径。
+
+solution:
+  actions:
+    - kind: read_file
+      args: {path: data/orders.csv}
+    - kind: shell
+      args:
+        command: >-
+          python -c "import csv,json,pathlib; rows=list(csv.DictReader(open('data/orders.csv'))); total=sum(float(r['amount']) for r in rows); pathlib.Path('out').mkdir(exist_ok=True); json.dump({'rows':len(rows),'total':round(total,2)}, open('out/summary.json','w'))"
+    - kind: shell
+      args:
+        command: >-
+          python -c "import csv,json,pathlib; rows=list(csv.DictReader(open('data/orders.csv'))); total=sum(float(r['amount']) for r in rows); pathlib.Path('out').mkdir(exist_ok=True); json.dump({'rows':len(rows),'total':round(total,2)}, open('out/summary.json','w'))"
+    - kind: finish
+      args: {message: "已生成 out/summary.json"}

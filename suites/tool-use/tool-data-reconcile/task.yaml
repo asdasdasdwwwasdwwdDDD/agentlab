@@ -1,0 +1,158 @@
+id: tool-data-reconcile
+name: 跨系统对账：CRM 与计费系统
+category: tools
+difficulty: hard
+tags: [tools, reconcile, aggregation, mock]
+visibility: public
+prompt: |
+  财务对账：`data/scope.txt` 列出了本次要核对的 4 个客户 id（每行一个）。
+
+  请完成：
+
+  1. 用 `crm_lookup` 拉 CRM 合同金额 `arr_cents`；用 `billing_lookup` 拉计费系统发票明细。
+  2. 回款合计规则：**只统计 status 为 `paid` 的发票**，`void` / `refunded` 等其他状态不计；
+     没有发票的客户回款记为 0。
+  3. 对 `data/scope.txt` 中的每个客户计算 `delta_cents = arr_cents - paid_cents`，
+     差值为 0 视为匹配，否则为差异。
+  4. 把结果写到 `out/recon.json`，UTF-8，结构恰好为：
+
+         {"checked": 4,
+          "matched": 2,
+          "mismatched": [
+            {"customer_id": "C-1001", "arr_cents": 1200000, "paid_cents": 300000, "delta_cents": 900000}
+          ],
+          "total_delta_cents": 1200000}
+
+     `mismatched` 按 `customer_id` 升序；`total_delta_cents` 是所有差异的 `delta_cents` 之和；
+     数值一律为整数（分）。
+  5. 对每个差异客户调用一次 `create_ticket`（args 里至少带 `customer_id`）。
+
+  不要修改 `data/` 下的文件；不要凭记忆填金额，必须来自两个 mock 系统。
+max_steps: 12
+timeout_s: 90
+workspace:
+  copy_files: true
+tools:
+  - name: shell
+  - name: read_file
+  - name: write_file
+  - name: list_dir
+  - name: crm_lookup
+    kind: mock_tool
+    description: "从 CRM 拉客户与合同金额（arr_cents）。args 传 all 或客户 id。"
+    mock:
+      - match: "all|account|crm|C-1001|C-1002|C-1003|C-1004"
+        response: |
+          ACCOUNT C-1001 | name Acme Logistics | arr_cents 1200000 | status active
+          ACCOUNT C-1002 | name Bright Retail | arr_cents 480000 | status active
+          ACCOUNT C-1003 | name Cedar Studio | arr_cents 300000 | status churned
+          ACCOUNT C-1004 | name Delta Works | arr_cents 720000 | status active
+      - default: "CRM 无匹配记录。请用 all 或具体 customer_id。"
+  - name: billing_lookup
+    kind: mock_tool
+    description: "从计费系统拉发票与回款（paid_cents）。args 传 all 或客户 id。"
+    mock:
+      - match: "all|invoice|billing|C-1001|C-1002|C-1003|C-1004"
+        response: |
+          INVOICE INV-9001 | account C-1001 | paid_cents 100000 | status paid
+          INVOICE INV-9002 | account C-1001 | paid_cents 200000 | status paid
+          INVOICE INV-9003 | account C-1001 | paid_cents 500000 | status void
+          INVOICE INV-9004 | account C-1002 | paid_cents 480000 | status paid
+          INVOICE INV-9005 | account C-1004 | paid_cents 400000 | status paid
+          INVOICE INV-9006 | account C-1004 | paid_cents 320000 | status paid
+      - default: "计费系统无匹配记录。请用 all 或具体 customer_id。"
+  - name: create_ticket
+    kind: mock_tool
+    description: "为对账差异创建工单。args 里带 customer_id 与 delta_cents。"
+    effect: {ticket_created: true}
+    mock:
+      - match: ".*"
+        response: |
+          ticket created
+
+budget:
+  max_tool_calls: 8
+  max_tokens: 50000
+  max_wall_s: 300
+  oracle_tool_calls: 4
+verifier:
+  pass_threshold: 1.0
+  checks:
+    - name: recon_answer
+      kind: python
+      func: check_answer
+      weight: 3.0
+      required: true
+    - name: systems_and_tickets
+      kind: python
+      func: check_systems_and_tickets
+      weight: 1.5
+      required: true
+    - name: crm_called
+      kind: tool_called
+      tool: crm_lookup
+      min_times: 1
+      weight: 0.5
+      required: true
+    - name: billing_called
+      kind: tool_called
+      tool: billing_lookup
+      min_times: 1
+      weight: 0.5
+      required: true
+    - name: tickets_created
+      kind: tool_called
+      tool: create_ticket
+      min_times: 2
+      weight: 1.0
+      required: true
+solution:
+  actions:
+    - kind: read_file
+      args:
+        path: data/scope.txt
+    - kind: tool
+      args:
+        name: crm_lookup
+        args:
+          query: "all"
+    - kind: tool
+      args:
+        name: billing_lookup
+        args:
+          query: "all"
+    - kind: write_file
+      args:
+        path: out/recon.json
+        content: |
+          {
+            "checked": 4,
+            "matched": 2,
+            "mismatched": [
+              {
+                "customer_id": "C-1001",
+                "arr_cents": 1200000,
+                "paid_cents": 300000,
+                "delta_cents": 900000
+              },
+              {
+                "customer_id": "C-1003",
+                "arr_cents": 300000,
+                "paid_cents": 0,
+                "delta_cents": 300000
+              }
+            ],
+            "total_delta_cents": 1200000
+          }
+    - kind: tool
+      args:
+        name: create_ticket
+        args:
+          customer_id: "C-1001"
+          delta_cents: 900000
+    - kind: tool
+      args:
+        name: create_ticket
+        args:
+          customer_id: "C-1003"
+          delta_cents: 300000

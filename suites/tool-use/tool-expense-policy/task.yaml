@@ -1,0 +1,245 @@
+id: tool-expense-policy
+name: 差旅报销审核：级别、汇率与政策
+category: tools
+difficulty: hard
+tags: [tools, expense, fx, policy]
+visibility: public
+prompt: |
+  你是财务共享中心的审核同学。`data/receipts.csv` 里有 6 张待审收据（字段：
+  `receipt_id`/`employee_id`/`category`/`amount`/`currency`/`date`）。
+
+  请逐张审核：
+
+  1. 用 `search_docs` 查差旅报销标准（英文关键词：`expense` 或 `travel`）。返回内容里有现行版
+     和已废止版，**以现行版 v3 为准**。
+  2. 用 `lookup_employee` 逐个查询员工级别（一次性一个 `employee_id`）。
+  3. 用 `lookup_fx_rate` 查询现行汇率（USD / EUR / JPY）。现行汇率**不在政策文档里**，
+     必须以汇率工具返回值为准。
+  4. 折算：`cny_cents = round_half_up(amount × 该币种汇率 × 100)`（人民币汇率为 1）；
+     按级别与类别算 `limit_cents`（人民币分）。未知类别上限按 0 处理。
+  5. 把结果写到 `out/expense_review.json`，UTF-8，结构恰好为：
+
+         {"reviews": [
+            {"receipt_id": "x-01", "employee_id": "E-01", "cny_cents": 86400,
+             "limit_cents": 80000, "decision": "reject", "reason": "over_limit"}
+          ],
+          "approved": 2,
+          "rejected": 4,
+          "total_approved_cents": 37800}
+
+     `reviews` 按 `receipt_id` 升序；`decision` 只能是 `approve` / `deny`；
+     `reason` 只能取 `within_limit` / `over_limit` / `unknown_category`；
+     `total_approved_cents` 是 approve 收据的 `cny_cents` 之和；数值一律为整数。
+     未知类别判定为 `reject` + `unknown_category`，且 `limit_cents` 记 0。
+  6. 对被拒（reject）的收据逐张调用一次 `create_ticket`（args 里至少带 `receipt_id`）。
+
+  不要修改 `data/` 下的文件；金额与汇率必须来自工具结果，不要猜。
+max_steps: 16
+timeout_s: 90
+workspace:
+  copy_files: true
+tools:
+  - name: shell
+  - name: read_file
+  - name: write_file
+  - name: list_dir
+  - name: search_docs
+    kind: mock_tool
+    description: "搜索内部文档。用英文关键词（expense / travel）查询。"
+    mock:
+      - match: "expense|travel|policy"
+        response: |
+          【差旅报销标准 v3 · 现行（2024-07-01 起生效）】
+          按员工级别设置单笔上限（人民币，含税）：
+          - 住宿 hotel：level A 800 元/晚，level B 500 元/晚，level C 350 元/晚；
+          - 餐饮 meal：所有级别 150 元/笔；
+          - 交通 taxi：所有级别 300 元/笔；
+          - 其它类别一律不予报销（unknown_category）。
+          外币折算汇率不在本文档里，请调用汇率工具 lookup_fx_rate 获取现行汇率。
+          折算后金额四舍五入到分（.5 进位）；人民币金额按原值。
+          判定：折算后金额 <= 上限 -> approve（within_limit），否则 reject（over_limit）。
+
+          【差旅报销标准 v2 · 已废止（2023 年，2024-06-30 停止使用）】
+          住宿统一 600 元/晚；餐饮 200 元/笔；交通 200 元/笔；汇率 USD 6.90，EUR 7.50，JPY 0.045。
+      - default: "未找到文档。请用英文关键词重试（expense / travel）。"
+  - name: lookup_employee
+    kind: mock_tool
+    description: "按 employee_id 查询员工级别（level）。一次查一个 id。"
+    mock:
+      - match: "E-01"
+        response: |
+          employee E-01 | name: Zhang Wei | level: A | department: sales
+      - match: "E-02"
+        response: |
+          employee E-02 | name: Li Na | level: B | department: ops
+      - match: "E-03"
+        response: |
+          employee E-03 | name: Wang Fang | level: C | department: support
+      - default: "未找到该 employee_id。"
+  - name: lookup_fx_rate
+    kind: mock_tool
+    description: "查询现行汇率（1 单位外币 = ? CNY）。一次可以传多个币种。"
+    mock:
+      - match: "USD|EUR|JPY"
+        response: |
+          FX | USD -> 7.20 CNY | EUR -> 7.80 CNY | JPY -> 0.048 CNY
+      - default: "不支持的币种。支持：USD / EUR / JPY / CNY。"
+  - name: create_ticket
+    kind: mock_tool
+    description: "为被拒收据创建财务复核工单。args 里带 receipt_id。"
+    effect: {ticket_created: true}
+    mock:
+      - match: ".*"
+        response: |
+          ticket created
+
+budget:
+  max_tool_calls: 14
+  max_tokens: 50000
+  max_wall_s: 300
+  oracle_tool_calls: 11
+verifier:
+  pass_threshold: 1.0
+  checks:
+    - name: expense_answer
+      kind: python
+      func: check_answer
+      weight: 3.0
+      required: true
+    - name: lookups_and_tickets
+      kind: python
+      func: check_lookups_and_tickets
+      weight: 1.5
+      required: true
+    - name: policy_looked_up
+      kind: tool_called
+      tool: search_docs
+      min_times: 1
+      args_contains: "expense|travel"
+      weight: 1.0
+      required: true
+    - name: fx_looked_up
+      kind: tool_called
+      tool: lookup_fx_rate
+      min_times: 1
+      weight: 0.5
+      required: true
+solution:
+  actions:
+    - kind: read_file
+      args:
+        path: data/receipts.csv
+    - kind: tool
+      args:
+        name: search_docs
+        args:
+          query: "expense travel policy"
+    - kind: tool
+      args:
+        name: lookup_employee
+        args:
+          employee_id: "E-01"
+    - kind: tool
+      args:
+        name: lookup_employee
+        args:
+          employee_id: "E-02"
+    - kind: tool
+      args:
+        name: lookup_employee
+        args:
+          employee_id: "E-03"
+    - kind: tool
+      args:
+        name: lookup_fx_rate
+        args:
+          currency: "USD"
+    - kind: tool
+      args:
+        name: lookup_fx_rate
+        args:
+          currency: "EUR"
+    - kind: tool
+      args:
+        name: lookup_fx_rate
+        args:
+          currency: "JPY"
+    - kind: write_file
+      args:
+        path: out/expense_review.json
+        content: |
+          {
+            "reviews": [
+              {
+                "receipt_id": "x-01",
+                "employee_id": "E-01",
+                "cny_cents": 86400,
+                "limit_cents": 80000,
+                "decision": "reject",
+                "reason": "over_limit"
+              },
+              {
+                "receipt_id": "x-02",
+                "employee_id": "E-01",
+                "cny_cents": 13800,
+                "limit_cents": 15000,
+                "decision": "approve",
+                "reason": "within_limit"
+              },
+              {
+                "receipt_id": "x-03",
+                "employee_id": "E-02",
+                "cny_cents": 54600,
+                "limit_cents": 50000,
+                "decision": "reject",
+                "reason": "over_limit"
+              },
+              {
+                "receipt_id": "x-04",
+                "employee_id": "E-03",
+                "cny_cents": 24000,
+                "limit_cents": 30000,
+                "decision": "approve",
+                "reason": "within_limit"
+              },
+              {
+                "receipt_id": "x-05",
+                "employee_id": "E-03",
+                "cny_cents": 18000,
+                "limit_cents": 15000,
+                "decision": "reject",
+                "reason": "over_limit"
+              },
+              {
+                "receipt_id": "x-06",
+                "employee_id": "E-02",
+                "cny_cents": 2000,
+                "limit_cents": 0,
+                "decision": "reject",
+                "reason": "unknown_category"
+              }
+            ],
+            "approved": 2,
+            "rejected": 4,
+            "total_approved_cents": 37800
+          }
+    - kind: tool
+      args:
+        name: create_ticket
+        args:
+          receipt_id: "x-01"
+    - kind: tool
+      args:
+        name: create_ticket
+        args:
+          receipt_id: "x-03"
+    - kind: tool
+      args:
+        name: create_ticket
+        args:
+          receipt_id: "x-05"
+    - kind: tool
+      args:
+        name: create_ticket
+        args:
+          receipt_id: "x-06"

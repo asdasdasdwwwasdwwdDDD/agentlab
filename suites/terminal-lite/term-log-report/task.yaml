@@ -1,0 +1,91 @@
+id: term-log-report
+name: 访问日志统计与慢请求报告
+category: terminal
+difficulty: easy
+tags: [shell, log, json, report]
+visibility: public
+prompt: |
+  你是运维值班同学。workspace 里有一次线上请求的访问日志 `logs/app.log`，每行格式固定为：
+
+      <ISO8601 时间戳> level=<级别> path=<请求路径> status=<状态码> ms=<耗时毫秒>
+
+  请按下面的口径统计，并把结果写成 `report/log_summary.json`：
+
+  1. 只统计 `logs/app.log`。同目录的 `logs/app.log.1` 是上一轮切割出来的历史文件，**不得计入**。
+  2. `by_level` 统计 INFO / WARN / ERROR 三个级别的行数（某级别为 0 时也要保留该键）。
+  3. `error_rate` = ERROR 行数 / `app.log` 总行数，四舍五入保留 4 位小数。
+  4. 慢请求：`ms >= 500` 的行；`slow_count` 是慢请求行数；`slowest_path` 是耗时最大那行的 `path`
+     （若并列最大，取字典序更小的 path）。
+  5. 输出 JSON（UTF-8），顶层恰好是这些键：`total`、`by_level`、`error_rate`、`slowest_path`、
+     `slow_count`；其中 `total`、`slow_count`、`by_level` 的值为整数，`error_rate` 为数字。
+     仓库里现有的 `report/log_summary.json` 是上一轮的错误统计，必须被覆盖。
+
+  约束：不得修改 `logs/` 下任何文件；只用可移植命令完成（例如 `python -c "..."`），
+  不要用 grep/sed/awk，也不要联网。
+max_steps: 8
+timeout_s: 60
+workspace:
+  copy_files: true
+tools: [shell, read_file, write_file, list_dir]
+budget:
+  max_tool_calls: 8
+  max_tokens: 30000
+  max_wall_s: 180
+  oracle_tool_calls: 2
+verifier:
+  pass_threshold: 1.0
+  checks:
+    - name: report_exists
+      kind: file_exists
+      path: report/log_summary.json
+      weight: 0.5
+      required: false
+    - name: report_values
+      kind: python
+      func: check_report_values
+      weight: 2.5
+      required: true
+    - name: log_untouched
+      kind: state_unchanged
+      paths: [logs/app.log, logs/app.log.1]
+      weight: 1.0
+      required: true
+solution:
+  actions:
+    - kind: read_file
+      args:
+        path: logs/app.log
+    - kind: shell
+      args:
+        command: |
+          python -c "import json, re
+          from pathlib import Path
+          pattern = re.compile(r'level=([A-Z]+) path=(\S+) status=\d+ ms=(\d+)')
+          rows = []
+          for line in Path('logs/app.log').read_text(encoding='utf-8').splitlines():
+              match = pattern.search(line)
+              if match is None:
+                  continue
+              rows.append({'level': match.group(1), 'path': match.group(2), 'ms': int(match.group(3))})
+          Path('work').mkdir(exist_ok=True)
+          Path('work/parsed.json').write_text(json.dumps(rows, indent=2) + '\n', encoding='utf-8')
+          print('parsed lines:', len(rows))"
+    - kind: shell
+      args:
+        command: |
+          python -c "import json
+          from pathlib import Path
+          rows = json.loads(Path('work/parsed.json').read_text(encoding='utf-8'))
+          levels = {'INFO': 0, 'WARN': 0, 'ERROR': 0}
+          slow = []
+          for row in rows:
+              levels[row['level']] = levels.get(row['level'], 0) + 1
+              if row['ms'] >= 500:
+                  slow.append((row['path'], row['ms']))
+          total = len(rows)
+          slowest = sorted(slow, key=lambda item: (-item[1], item[0]))[0][0]
+          report = {'total': total, 'by_level': levels, 'error_rate': round(levels['ERROR'] / total, 4), 'slowest_path': slowest, 'slow_count': len(slow)}
+          Path('report').mkdir(exist_ok=True)
+          Path('report/log_summary.json').write_text(json.dumps(report, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+          print(json.dumps(report, ensure_ascii=False))"
+

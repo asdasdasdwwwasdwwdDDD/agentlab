@@ -1,0 +1,228 @@
+id: tool-refund-approval
+name: 退款审批：政策、订单系统与副作用
+category: tools
+difficulty: medium
+tags: [tools, refund, policy, decision]
+visibility: public
+prompt: |
+  你是售后审核同学。`inbox/refunds.json` 里有 4 条退款申请（字段：
+  `request_id`/`customer_id`/`order_id`/`claimed_days`/`note`）。
+
+  请逐条判定：
+
+  1. 用 `search_docs` 查退款政策（英文关键词：`refund`）。返回内容里同时有现行版和已废止版，
+     **以现行版（v2）为准**。
+  2. 用 `lookup_order` 逐个查询订单系统记录（一次查一个 `order_id`），拿订单类型、状态、
+     真实签收天数 `delivered_days_ago` 和金额 `total_cents`。**客户自述的 claimed_days 不可信，
+     一律以订单系统为准**。
+  3. 用 `lookup_customer` 逐个查询客户等级（`tier`），判断是否 VIP。
+  4. 按现行政策给出决定，写到 `out/refunds.json`，UTF-8，结构恰好为：
+
+         {"decisions": [
+            {"request_id": "r-01", "order_id": "O-7001", "decision": "approve",
+             "refund_cents": 12900, "reason": "within_window_vip"}
+         ]}
+
+     字段只允许 `request_id`/`order_id`/`decision`/`refund_cents`/`reason`；
+     `decision` 只能是 `approve` / `deny`，`refund_cents` 为整数分（deny 时为 0）；
+     `reason` 只能取：`within_window`、`within_window_vip`、`out_of_window`、
+     `non_refundable_digital`、`already_refunded`。按 `request_id` 升序排列。
+  5. 每个判定为 `approve` 的申请，必须调用一次 `apply_refund`（args 里带 `order_id` 与
+     `refund_cents`）；判定为 deny 的**不得**调用 `apply_refund`。
+
+  不要修改 `inbox/` 下的文件；不要臆测政策，必须以文档为准。
+max_steps: 16
+timeout_s: 90
+workspace:
+  copy_files: true
+tools:
+  - name: shell
+  - name: read_file
+  - name: write_file
+  - name: list_dir
+  - name: search_docs
+    kind: mock_tool
+    description: "搜索内部文档。用英文关键词（refund / policy）查询。"
+    mock:
+      - match: "refund|policy"
+        response: |
+          【退款政策 v2 · 现行（2024-07-01 起生效）】
+          1. 签收后 14 天内可申请全额退款（ordinary 客户）。
+          2. VIP 客户（客户档案 tier=vip）退款窗口延长至 30 天。
+          3. 数字商品 / 已激活订阅（订单类型 digital）一律不退款，判定 non_refundable_digital。
+          4. 订单状态已经是 refunded 的不能重复退款，判定 already_refunded。
+          5. approve 时退款金额为订单 total_cents（全额），reason 为 within_window（ordinary）或
+             within_window_vip（VIP）；超过窗口 reason 为 out_of_window。
+          6. 真实签收天数以订单系统 lookup_order 的 delivered_days_ago 为准，客户自述仅供参考。
+
+          【退款政策 v1 · 已废止（2023 年，2024-06-30 停止使用）】
+          签收后 7 天内可退款；VIP 客户 15 天；数字商品可退 50%。
+      - default: "未找到文档。请用英文关键词重试（refund / policy）。"
+  - name: lookup_customer
+    kind: mock_tool
+    description: "按 customer_id 查询客户档案（等级）。一次查一个 id。"
+    mock:
+      - match: "C-1001"
+        response: |
+          customer C-1001 | name: Acme | tier: vip | status: active
+      - match: "C-1002"
+        response: |
+          customer C-1002 | name: Bright | tier: ordinary | status: active
+      - match: "C-1003"
+        response: |
+          customer C-1003 | name: Cedar | tier: ordinary | status: active
+      - match: "C-1004"
+        response: |
+          customer C-1004 | name: Delta | tier: vip | status: active
+      - default: "未找到该 customer_id。"
+  - name: lookup_order
+    kind: mock_tool
+    description: "按 order_id 查询订单系统记录（类型 / 状态 / 签收天数 / 金额）。一次查一个 id。"
+    mock:
+      - match: "O-7001"
+        response: |
+          order O-7001 | customer C-1001 | type physical | status delivered | delivered_days_ago 25 | total_cents 12900
+      - match: "O-7002"
+        response: |
+          order O-7002 | customer C-1002 | type digital | status delivered | delivered_days_ago 3 | total_cents 4900
+      - match: "O-7003"
+        response: |
+          order O-7003 | customer C-1003 | type physical | status delivered | delivered_days_ago 40 | total_cents 8800
+      - match: "O-7004"
+        response: |
+          order O-7004 | customer C-1004 | type physical | status refunded | delivered_days_ago 2 | total_cents 5600
+      - default: "未找到该 order_id。"
+  - name: apply_refund
+    kind: mock_tool
+    description: "提交退款。approve 时必须调用，args 里带 order_id 与 refund_cents。"
+    effect: {refund_applied: true}
+    mock:
+      - match: "O-7001"
+        response: |
+          refund submitted for O-7001
+      - default: "refund rejected by gateway"
+
+budget:
+  max_tool_calls: 14
+  max_tokens: 50000
+  max_wall_s: 300
+  oracle_tool_calls: 10
+verifier:
+  pass_threshold: 1.0
+  checks:
+    - name: refund_answer
+      kind: python
+      func: check_answer
+      weight: 3.0
+      required: true
+    - name: inputs_and_side_effects
+      kind: python
+      func: check_inputs_and_side_effects
+      weight: 1.5
+      required: true
+    - name: policy_looked_up
+      kind: tool_called
+      tool: search_docs
+      min_times: 1
+      args_contains: "refund"
+      weight: 1.0
+      required: true
+    - name: refund_applied
+      kind: tool_called
+      tool: apply_refund
+      min_times: 1
+      args_contains: "O-7001"
+      weight: 1.0
+      required: true
+solution:
+  actions:
+    - kind: read_file
+      args:
+        path: inbox/refunds.json
+    - kind: tool
+      args:
+        name: search_docs
+        args:
+          query: "refund policy"
+    - kind: tool
+      args:
+        name: lookup_order
+        args:
+          order_id: "O-7001"
+    - kind: tool
+      args:
+        name: lookup_order
+        args:
+          order_id: "O-7002"
+    - kind: tool
+      args:
+        name: lookup_order
+        args:
+          order_id: "O-7003"
+    - kind: tool
+      args:
+        name: lookup_order
+        args:
+          order_id: "O-7004"
+    - kind: tool
+      args:
+        name: lookup_customer
+        args:
+          customer_id: "C-1001"
+    - kind: tool
+      args:
+        name: lookup_customer
+        args:
+          customer_id: "C-1002"
+    - kind: tool
+      args:
+        name: lookup_customer
+        args:
+          customer_id: "C-1003"
+    - kind: tool
+      args:
+        name: lookup_customer
+        args:
+          customer_id: "C-1004"
+    - kind: write_file
+      args:
+        path: out/refunds.json
+        content: |
+          {
+            "decisions": [
+              {
+                "request_id": "r-01",
+                "order_id": "O-7001",
+                "decision": "approve",
+                "refund_cents": 12900,
+                "reason": "within_window_vip"
+              },
+              {
+                "request_id": "r-02",
+                "order_id": "O-7002",
+                "decision": "deny",
+                "refund_cents": 0,
+                "reason": "non_refundable_digital"
+              },
+              {
+                "request_id": "r-03",
+                "order_id": "O-7003",
+                "decision": "deny",
+                "refund_cents": 0,
+                "reason": "out_of_window"
+              },
+              {
+                "request_id": "r-04",
+                "order_id": "O-7004",
+                "decision": "deny",
+                "refund_cents": 0,
+                "reason": "already_refunded"
+              }
+            ]
+          }
+    - kind: tool
+      args:
+        name: apply_refund
+        args:
+          order_id: "O-7001"
+          refund_cents: 12900

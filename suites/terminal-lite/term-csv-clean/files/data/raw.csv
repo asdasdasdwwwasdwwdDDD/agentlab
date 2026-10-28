@@ -1,0 +1,13 @@
+id,name,email,updated_at,status
+u10,Alice Chen,ALICE@Example.com ,2024/03/05,ACTIVE
+u2, Bob  Lee ,bob@example.com,2024-03-04 10:20:30,Active
+u2,Bob Lee,bob@example.com,2024-03-06,active
+u3,"Acme, Inc",ops@acme.io,2024-01-10,active
+u4,,noreply@x.dev,2024-02-01,active
+u5,Carol,carol@example.com,,active
+u6,Dan,dan@example.com,2024-02-11,unknown
+u7,Eve,eve@example.com,2024/01/02,INACTIVE
+u8,Frank,frank@example.com,2024-02-20,active
+u8,Frank,frank@example.com,2024-02-20,active
+,NoId,noid@example.com,2024-02-02,active
+u9,Grace,grace@example.com,2024-03-01 23:59:59,inactive

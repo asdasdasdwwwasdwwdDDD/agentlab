@@ -1,0 +1,49 @@
+{
+  "run_id": "exp-early-stop",
+  "created_at": "2026-10-26T22:59:54+0800",
+  "config": {
+    "suite": "rebound",
+    "task_ids": null,
+    "agent": "scripted",
+    "policy": "early_stop",
+    "model": "mock",
+    "samples": 2,
+    "workers": 4,
+    "noise": 0.0,
+    "seed": 0,
+    "limit": null,
+    "temperature": 0.0,
+    "run_id": "exp-early-stop"
+  },
+  "tasks": [
+    {
+      "id": "rb-fault-retry",
+      "suite": "rebound",
+      "fingerprint": "b4a196c64496d61e",
+      "difficulty": "easy"
+    },
+    {
+      "id": "rb-ambiguity-port",
+      "suite": "rebound",
+      "fingerprint": "28a5d0a010acf445",
+      "difficulty": "medium"
+    },
+    {
+      "id": "rb-budget-oneshot",
+      "suite": "rebound",
+      "fingerprint": "477e9a147b8b1dbd",
+      "difficulty": "medium"
+    },
+    {
+      "id": "rb-drift-config",
+      "suite": "rebound",
+      "fingerprint": "7d68ebd5d4cf230f",
+      "difficulty": "medium"
+    }
+  ],
+  "environment": {
+    "python": "3.12.7",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "agentlab_version": "0.1.0"
+  }
+}

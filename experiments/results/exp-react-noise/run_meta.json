@@ -1,0 +1,133 @@
+{
+  "run_id": "exp-react-noise",
+  "created_at": "2026-10-26T22:59:55+0800",
+  "config": {
+    "suite": null,
+    "task_ids": null,
+    "agent": "react",
+    "policy": "oracle",
+    "model": "mock:0.3",
+    "samples": 2,
+    "workers": 4,
+    "noise": 0.0,
+    "seed": 0,
+    "limit": null,
+    "temperature": 0.0,
+    "run_id": "exp-react-noise"
+  },
+  "tasks": [
+    {
+      "id": "rb-fault-retry",
+      "suite": "rebound",
+      "fingerprint": "b4a196c64496d61e",
+      "difficulty": "easy"
+    },
+    {
+      "id": "rb-ambiguity-port",
+      "suite": "rebound",
+      "fingerprint": "28a5d0a010acf445",
+      "difficulty": "medium"
+    },
+    {
+      "id": "rb-budget-oneshot",
+      "suite": "rebound",
+      "fingerprint": "477e9a147b8b1dbd",
+      "difficulty": "medium"
+    },
+    {
+      "id": "rb-drift-config",
+      "suite": "rebound",
+      "fingerprint": "7d68ebd5d4cf230f",
+      "difficulty": "medium"
+    },
+    {
+      "id": "repo-csv-ledger",
+      "suite": "repo-fix",
+      "fingerprint": "0e4758b144463819",
+      "difficulty": "hard"
+    },
+    {
+      "id": "repo-retry-engine",
+      "suite": "repo-fix",
+      "fingerprint": "fa6300ea7d1a15c3",
+      "difficulty": "hard"
+    },
+    {
+      "id": "repo-invoice-round",
+      "suite": "repo-fix",
+      "fingerprint": "d7c84cef740937f9",
+      "difficulty": "medium"
+    },
+    {
+      "id": "repo-log-rotate",
+      "suite": "repo-fix",
+      "fingerprint": "05472ad7bb68915d",
+      "difficulty": "medium"
+    },
+    {
+      "id": "term-csv-clean",
+      "suite": "terminal-lite",
+      "fingerprint": "5eaa8ed85f548b06",
+      "difficulty": "easy"
+    },
+    {
+      "id": "term-log-report",
+      "suite": "terminal-lite",
+      "fingerprint": "e6a57b08c67195e0",
+      "difficulty": "easy"
+    },
+    {
+      "id": "term-dup-audit",
+      "suite": "terminal-lite",
+      "fingerprint": "88486d843237fc49",
+      "difficulty": "hard"
+    },
+    {
+      "id": "term-port-conflict",
+      "suite": "terminal-lite",
+      "fingerprint": "6020d33107a8ab55",
+      "difficulty": "hard"
+    },
+    {
+      "id": "term-backup-manifest",
+      "suite": "terminal-lite",
+      "fingerprint": "5e0c55aa0688d763",
+      "difficulty": "medium"
+    },
+    {
+      "id": "term-config-migrate",
+      "suite": "terminal-lite",
+      "fingerprint": "a3443f58fc7c57d0",
+      "difficulty": "medium"
+    },
+    {
+      "id": "tool-ticket-triage",
+      "suite": "tool-use",
+      "fingerprint": "b8eb5871b172ce8b",
+      "difficulty": "easy"
+    },
+    {
+      "id": "tool-data-reconcile",
+      "suite": "tool-use",
+      "fingerprint": "dd45145c3bed11c4",
+      "difficulty": "hard"
+    },
+    {
+      "id": "tool-expense-policy",
+      "suite": "tool-use",
+      "fingerprint": "7001c4d7d80589a8",
+      "difficulty": "hard"
+    },
+    {
+      "id": "tool-refund-approval",
+      "suite": "tool-use",
+      "fingerprint": "0aeff06c93aa1832",
+      "difficulty": "medium"
+    }
+  ],
+  "environment": {
+    "python": "3.12.7",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "agentlab_version": "0.1.0"
+  }
+}

@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+.env
+experiments/results/*/workspaces/
+experiments/results/*/episodes/
+experiments/rl/workspaces/
+!experiments/results/*/report.md
+!experiments/results/*/summary.json
+!experiments/results/*/results.jsonl
+!experiments/results/*/charts/
+.workbuddy/
+.vscode/
