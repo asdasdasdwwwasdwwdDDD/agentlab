@@ -3,6 +3,8 @@
 > 一个从 **benchmark 调研 → 复现 → 新 benchmark 设计 → 评测/RL 环境** 全链路落地的工程项目。
 > 无需 API key 即可端到端运行；接入真实模型只需设置 `OPENAI_BASE_URL` / `OPENAI_API_KEY`。
 
+**在线浏览**：[可交互运行流程图](https://asdasdasdwwwasdwwdddd.github.io/agentlab/agentlab-flow.html) · [项目首页](https://asdasdasdwwwasdwwdddd.github.io/agentlab/)
+
 `AgentLab` 不是一个跑分榜单，而是一套**可读、可改、可验证**的评测骨架：
 
 - **任务即数据**：一个目录 = 指令 + 初始文件 + 工具 + 预算 + 扰动 + 判分 + 参考解。
